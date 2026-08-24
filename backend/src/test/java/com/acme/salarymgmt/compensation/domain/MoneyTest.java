@@ -21,4 +21,14 @@ class MoneyTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Amount must not be null");
     }
+
+    @Test
+    @DisplayName("Should reject negative amount during Money construction")
+    void shouldRejectNegativeAmount() {
+        BigDecimal negativeAmount = new BigDecimal("-10.00");
+
+        assertThatThrownBy(() -> Money.of(negativeAmount, USD))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Amount must not be negative");
+    }
 }
