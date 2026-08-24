@@ -1,0 +1,11 @@
+{
+  "name": "acme-salary-craft",
+  "dockerComposeFile": "../infra/docker-compose.yml",
+  "service": "postgres",
+  "workspaceFolder": "/workspace",
+  "features": {
+    "ghcr.io/devcontainers/features/java:1": { "version": "21" },
+    "ghcr.io/devcontainers/features/node:1": { "version": "20" }
+  },
+  "forwardPorts": [8080, 4200, 5432]
+}
