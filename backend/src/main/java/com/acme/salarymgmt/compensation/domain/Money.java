@@ -1,6 +1,7 @@
 package com.acme.salarymgmt.compensation.domain;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.Currency;
 
 public record Money(BigDecimal amount, Currency currency) {
@@ -12,6 +13,10 @@ public record Money(BigDecimal amount, Currency currency) {
         if (amount.compareTo(BigDecimal.ZERO) < 0) {
             throw new IllegalArgumentException("Amount must not be negative");
         }
-        return new Money(amount, currency);
+        if (currency == null) {
+            throw new IllegalArgumentException("Currency must not be null");
+        }
+        BigDecimal scaledAmount = amount.setScale(2, RoundingMode.HALF_EVEN);
+        return new Money(scaledAmount, currency);
     }
 }
