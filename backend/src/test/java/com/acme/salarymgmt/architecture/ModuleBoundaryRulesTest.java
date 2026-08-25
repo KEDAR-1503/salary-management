@@ -27,7 +27,13 @@ class ModuleBoundaryRulesTest {
     static final ArchRule compensation_should_not_access_audit_repository_directly =
             noClasses().that().resideInAPackage("..compensation..")
                     .should().accessClassesThat().resideInAPackage("..audit.repository..")
-                    .because("Compensation must only interact with Audit via public Service contracts.");
+                    .because("Compensation must only interact with Audit via the AuditRecorder port.");
+
+    @ArchTest
+    static final ArchRule compensation_service_should_use_audit_port =
+            noClasses().that().resideInAPackage("..compensation.service..")
+                    .should().dependOnClassesThat().resideInAPackage("..audit.service..")
+                    .because("Compensation services must depend on the AuditRecorder port, not AuditService.");
 
     @ArchTest
     static final ArchRule controllers_must_not_access_repositories_directly =

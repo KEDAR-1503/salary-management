@@ -1,6 +1,7 @@
 package com.acme.salarymgmt.audit.service;
 
 import com.acme.salarymgmt.audit.domain.SalaryAuditLog;
+import com.acme.salarymgmt.audit.port.AuditRecorder;
 import com.acme.salarymgmt.audit.repository.SalaryAuditLogRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -14,10 +15,11 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-public class AuditService {
+public class AuditService implements AuditRecorder {
 
     private final SalaryAuditLogRepository auditLogRepository;
 
+    @Override
     @Transactional(propagation = Propagation.MANDATORY)
     public void recordSalaryChange(
             Long employeeId,
@@ -40,6 +42,7 @@ public class AuditService {
         auditLogRepository.save(auditLog);
     }
 
+    @Override
     @Transactional(propagation = Propagation.MANDATORY)
     public void recordInitialSetup(
             Long employeeId,

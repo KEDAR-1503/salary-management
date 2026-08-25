@@ -1,5 +1,7 @@
 package com.acme.salarymgmt.compensation.api;
 
+import com.acme.salarymgmt.audit.dto.SalaryAuditLogResponse;
+import com.acme.salarymgmt.audit.service.AuditService;
 import com.acme.salarymgmt.compensation.domain.Employee;
 import com.acme.salarymgmt.compensation.dto.CreateEmployeeRequest;
 import com.acme.salarymgmt.compensation.dto.EmployeeResponse;
@@ -22,6 +24,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Currency;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/employees")
@@ -29,6 +32,7 @@ import java.util.Currency;
 public class CompensationController {
 
     private final CompensationService compensationService;
+    private final AuditService auditService;
 
     @PostMapping
     public ResponseEntity<EmployeeResponse> createEmployee(@Valid @RequestBody CreateEmployeeRequest request) {
@@ -53,11 +57,26 @@ public class CompensationController {
     ) {
         Employee updated = compensationService.updateSalary(
                 id,
+                request.version(),
                 request.newSalary(),
                 request.effectiveDate(),
                 request.reason()
         );
         return ResponseEntity.ok(EmployeeResponse.fromDomain(updated));
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<EmployeeResponse> getEmployee(@PathVariable Long id) {
+        return ResponseEntity.ok(EmployeeResponse.fromDomain(compensationService.getEmployee(id)));
+    }
+
+    @GetMapping("/{id}/history")
+    public ResponseEntity<List<SalaryAuditLogResponse>> getEmployeeHistory(@PathVariable Long id) {
+        compensationService.getEmployee(id);
+        List<SalaryAuditLogResponse> history = auditService.getAuditHistory(id).stream()
+                .map(SalaryAuditLogResponse::fromDomain)
+                .toList();
+        return ResponseEntity.ok(history);
     }
 
     @GetMapping
