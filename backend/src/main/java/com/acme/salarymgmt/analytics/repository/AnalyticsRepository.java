@@ -1,7 +1,5 @@
 package com.acme.salarymgmt.analytics.repository;
 
-import com.acme.salarymgmt.analytics.dto.CountryCompensationSummary;
-import com.acme.salarymgmt.analytics.dto.DepartmentCompensationSummary;
 import com.acme.salarymgmt.compensation.domain.Employee;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -12,31 +10,27 @@ import java.util.List;
 @Repository
 public interface AnalyticsRepository extends JpaRepository<Employee, Long> {
 
-    @Query("""
-        SELECT new com.acme.salarymgmt.analytics.dto.DepartmentCompensationSummary(
-            e.department,
-            e.currencyCode,
-            COUNT(e.id),
-            AVG(e.currentSalary),
-            AVG(e.currentSalary)
-        )
-        FROM Employee e
-        GROUP BY e.department, e.currencyCode
-        ORDER BY e.department ASC, e.currencyCode ASC
-    """)
-    List<DepartmentCompensationSummary> getDepartmentSummaries();
+    @Query(value = """
+        SELECT e.department AS department,
+               e.currency AS currency,
+               COUNT(e.id) AS headcount,
+               AVG(e.current_salary) AS averageSalary,
+               percentile_cont(0.5) WITHIN GROUP (ORDER BY e.current_salary) AS medianSalary
+        FROM employees e
+        GROUP BY e.department, e.currency
+        ORDER BY e.department ASC, e.currency ASC
+        """, nativeQuery = true)
+    List<DepartmentCompensationSummaryProjection> getDepartmentSummaries();
 
-    @Query("""
-        SELECT new com.acme.salarymgmt.analytics.dto.CountryCompensationSummary(
-            e.country,
-            e.currencyCode,
-            COUNT(e.id),
-            AVG(e.currentSalary),
-            AVG(e.currentSalary)
-        )
-        FROM Employee e
-        GROUP BY e.country, e.currencyCode
-        ORDER BY e.country ASC, e.currencyCode ASC
-    """)
-    List<CountryCompensationSummary> getCountrySummaries();
+    @Query(value = """
+        SELECT e.country AS country,
+               e.currency AS currency,
+               COUNT(e.id) AS headcount,
+               AVG(e.current_salary) AS averageSalary,
+               percentile_cont(0.5) WITHIN GROUP (ORDER BY e.current_salary) AS medianSalary
+        FROM employees e
+        GROUP BY e.country, e.currency
+        ORDER BY e.country ASC, e.currency ASC
+        """, nativeQuery = true)
+    List<CountryCompensationSummaryProjection> getCountrySummaries();
 }
