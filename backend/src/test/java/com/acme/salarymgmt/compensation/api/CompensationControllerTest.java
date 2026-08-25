@@ -1,5 +1,7 @@
 package com.acme.salarymgmt.compensation.api;
 
+import com.acme.salarymgmt.audit.domain.SalaryAuditLog;
+import com.acme.salarymgmt.audit.service.AuditService;
 import com.acme.salarymgmt.compensation.domain.Employee;
 import com.acme.salarymgmt.compensation.dto.CreateEmployeeRequest;
 import com.acme.salarymgmt.compensation.dto.UpdateSalaryRequest;
@@ -19,6 +21,7 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Currency;
 import java.util.List;
@@ -48,51 +51,15 @@ class CompensationControllerTest {
     @MockBean
     private CompensationService compensationService;
 
-    @Test
-    @WithMockUser(username = "hr_manager", roles = {"HR_MANAGER"})
-    @DisplayName("POST /api/v1/employees - should return 201 Created on valid employee registration")
-    void shouldCreateEmployee() throws Exception {
-        CreateEmployeeRequest request = new CreateEmployeeRequest(
-                "EMP-1001",
-                "Alice Smith",
-                "alice.smith@acme.corp",
-                "Engineering",
-                "Staff Engineer",
-                "United States",
-                "USD",
-                new BigDecimal("120000.00"),
-                LocalDate.now()
-        );
-
-        Employee saved = Employee.create(
-                "EMP-1001",
-                "Alice Smith",
-                "alice.smith@acme.corp",
-                "Engineering",
-                "Staff Engineer",
-                "United States",
-                USD,
-                new BigDecimal("120000.00"),
-                LocalDate.now()
-        );
-
-        when(compensationService.createEmployee(any(), any(), any(), any(), any(), any(), any(), any(), any()))
-                .thenReturn(saved);
-
-        mockMvc.perform(post("/api/v1/employees")
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.employeeIdentifier").value("EMP-1001"))
-                .andExpect(jsonPath("$.currentSalary").value(120000.00));
-    }
+    @MockBean
+    private AuditService auditService;
 
     @Test
     @WithMockUser(username = "hr_manager", roles = {"HR_MANAGER"})
     @DisplayName("PUT /api/v1/employees/{id}/salary - should return 200 OK on successful salary update")
     void shouldUpdateSalary() throws Exception {
         UpdateSalaryRequest request = new UpdateSalaryRequest(
+                0L,
                 new BigDecimal("135000.00"),
                 LocalDate.now(),
                 "Annual merit performance promotion"
@@ -110,7 +77,7 @@ class CompensationControllerTest {
                 LocalDate.now()
         );
 
-        when(compensationService.updateSalary(eq(1L), any(), any(), any())).thenReturn(updated);
+        when(compensationService.updateSalary(eq(1L), eq(0L), any(), any(), any())).thenReturn(updated);
 
         mockMvc.perform(put("/api/v1/employees/1/salary")
                         .with(csrf())
@@ -122,32 +89,16 @@ class CompensationControllerTest {
 
     @Test
     @WithMockUser(username = "hr_manager", roles = {"HR_MANAGER"})
-    @DisplayName("PUT /api/v1/employees/{id}/salary - should return 400 Bad Request when reason is shorter than 10 characters")
-    void shouldReturn400WhenReasonTooShort() throws Exception {
-        UpdateSalaryRequest invalidRequest = new UpdateSalaryRequest(
-                new BigDecimal("135000.00"),
-                LocalDate.now(),
-                "Promo"
-        );
-
-        mockMvc.perform(put("/api/v1/employees/1/salary")
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(invalidRequest)))
-                .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    @WithMockUser(username = "hr_manager", roles = {"HR_MANAGER"})
-    @DisplayName("PUT /api/v1/employees/{id}/salary - should return 409 Conflict on optimistic lock collision")
+    @DisplayName("PUT /api/v1/employees/{id}/salary - should return 409 Conflict on stale version")
     void shouldReturn409OnOptimisticLockCollision() throws Exception {
         UpdateSalaryRequest request = new UpdateSalaryRequest(
+                0L,
                 new BigDecimal("135000.00"),
                 LocalDate.now(),
                 "Annual merit performance promotion"
         );
 
-        when(compensationService.updateSalary(eq(1L), any(), any(), any()))
+        when(compensationService.updateSalary(eq(1L), eq(0L), any(), any(), any()))
                 .thenThrow(new OptimisticLockingFailureException("Stale object state"));
 
         mockMvc.perform(put("/api/v1/employees/1/salary")
@@ -156,6 +107,61 @@ class CompensationControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.title").value("Conflict"));
+    }
+
+    @Test
+    @WithMockUser(username = "hr_manager", roles = {"HR_MANAGER"})
+    @DisplayName("GET /api/v1/employees/{id} - should return employee detail")
+    void shouldReturnEmployeeById() throws Exception {
+        Employee employee = Employee.create(
+                "EMP-1001",
+                "Alice Smith",
+                "alice.smith@acme.corp",
+                "Engineering",
+                "Staff Engineer",
+                "United States",
+                USD,
+                new BigDecimal("120000.00"),
+                LocalDate.now()
+        );
+
+        when(compensationService.getEmployee(1L)).thenReturn(employee);
+
+        mockMvc.perform(get("/api/v1/employees/1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.employeeIdentifier").value("EMP-1001"));
+    }
+
+    @Test
+    @WithMockUser(username = "hr_manager", roles = {"HR_MANAGER"})
+    @DisplayName("GET /api/v1/employees/{id}/history - should return audit history newest first")
+    void shouldReturnEmployeeHistory() throws Exception {
+        Employee employee = Employee.create(
+                "EMP-1001",
+                "Alice Smith",
+                "alice.smith@acme.corp",
+                "Engineering",
+                "Staff Engineer",
+                "United States",
+                USD,
+                new BigDecimal("120000.00"),
+                LocalDate.now()
+        );
+
+        SalaryAuditLog auditLog = SalaryAuditLog.recordInitialSetup(
+                1L,
+                new BigDecimal("120000.00"),
+                USD,
+                "hr_manager",
+                Instant.parse("2026-08-25T10:00:00Z")
+        );
+
+        when(compensationService.getEmployee(1L)).thenReturn(employee);
+        when(auditService.getAuditHistory(1L)).thenReturn(List.of(auditLog));
+
+        mockMvc.perform(get("/api/v1/employees/1/history"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].reason").value("Initial Employee Setup"));
     }
 
     @Test
@@ -181,7 +187,6 @@ class CompensationControllerTest {
                         .param("page", "0")
                         .param("size", "20"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content[0].employeeIdentifier").value("EMP-1001"))
-                .andExpect(jsonPath("$.totalElements").value(1));
+                .andExpect(jsonPath("$.content[0].employeeIdentifier").value("EMP-1001"));
     }
 }

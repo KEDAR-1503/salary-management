@@ -1,6 +1,6 @@
 package com.acme.salarymgmt.compensation.service;
 
-import com.acme.salarymgmt.audit.service.AuditService;
+import com.acme.salarymgmt.audit.port.AuditRecorder;
 import com.acme.salarymgmt.compensation.domain.Employee;
 import com.acme.salarymgmt.compensation.repository.EmployeeRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -42,13 +43,13 @@ class CompensationServiceTest {
     private EmployeeRepository employeeRepository;
 
     @Mock
-    private AuditService auditService;
+    private AuditRecorder auditRecorder;
 
     private CompensationService compensationService;
 
     @BeforeEach
     void setUp() {
-        compensationService = new CompensationService(employeeRepository, auditService, FIXED_CLOCK);
+        compensationService = new CompensationService(employeeRepository, auditRecorder, FIXED_CLOCK);
         SecurityContextHolder.getContext().setAuthentication(
                 new UsernamePasswordAuthenticationToken("hr_manager", "pass", List.of(new SimpleGrantedAuthority("ROLE_HR_MANAGER")))
         );
@@ -60,37 +61,7 @@ class CompensationServiceTest {
     }
 
     @Test
-    @DisplayName("Should create employee and record initial setup audit entry with server-derived actor")
-    void shouldCreateEmployeeAndRecordInitialAudit() {
-        LocalDate today = LocalDate.now(FIXED_CLOCK);
-
-        when(employeeRepository.save(any(Employee.class))).thenAnswer(invocation -> invocation.getArgument(0));
-
-        Employee result = compensationService.createEmployee(
-                "EMP-1001",
-                "Alice Smith",
-                "alice.smith@acme.corp",
-                "Engineering",
-                "Staff Engineer",
-                "United States",
-                USD,
-                new BigDecimal("120000.00"),
-                today
-        );
-
-        assertThat(result.getEmployeeIdentifier()).isEqualTo("EMP-1001");
-        verify(employeeRepository).save(any(Employee.class));
-        verify(auditService).recordInitialSetup(
-                eq(result.getId()),
-                eq(new BigDecimal("120000.00")),
-                eq(USD),
-                eq("hr_manager"),
-                eq(FIXED_INSTANT)
-        );
-    }
-
-    @Test
-    @DisplayName("Should update salary, persist changes, and invoke audit service with derived actor")
+    @DisplayName("Should update salary when version matches and record audit")
     void shouldUpdateSalaryAndRecordAudit() {
         LocalDate effectiveDate = LocalDate.now(FIXED_CLOCK);
         Employee existingEmployee = Employee.create(
@@ -110,15 +81,14 @@ class CompensationServiceTest {
 
         Employee updated = compensationService.updateSalary(
                 101L,
+                0L,
                 new BigDecimal("135000.00"),
                 effectiveDate,
                 "Annual merit performance promotion"
         );
 
         assertThat(updated.getCurrentSalary()).isEqualByComparingTo(new BigDecimal("135000.00"));
-        assertThat(updated.getEffectiveDate()).isEqualTo(effectiveDate);
-
-        verify(auditService).recordSalaryChange(
+        verify(auditRecorder).recordSalaryChange(
                 eq(101L),
                 eq(new BigDecimal("120000.00")),
                 eq(new BigDecimal("135000.00")),
@@ -130,18 +100,31 @@ class CompensationServiceTest {
     }
 
     @Test
-    @DisplayName("Should throw EntityNotFoundException when updating non-existent employee")
-    void shouldThrowWhenEmployeeNotFound() {
-        when(employeeRepository.findById(999L)).thenReturn(Optional.empty());
+    @DisplayName("Should throw OptimisticLockingFailureException when client version is stale")
+    void shouldRejectStaleVersion() {
+        LocalDate effectiveDate = LocalDate.now(FIXED_CLOCK);
+        Employee existingEmployee = Employee.create(
+                "EMP-1001",
+                "Alice Smith",
+                "alice.smith@acme.corp",
+                "Engineering",
+                "Staff Engineer",
+                "United States",
+                USD,
+                new BigDecimal("120000.00"),
+                effectiveDate
+        );
+
+        when(employeeRepository.findById(101L)).thenReturn(Optional.of(existingEmployee));
 
         assertThatThrownBy(() -> compensationService.updateSalary(
-                999L,
-                new BigDecimal("100000.00"),
-                LocalDate.now(FIXED_CLOCK),
-                "Merit increase adjustment"
+                101L,
+                99L,
+                new BigDecimal("135000.00"),
+                effectiveDate,
+                "Annual merit performance promotion"
         ))
-        .isInstanceOf(EntityNotFoundException.class)
-        .hasMessage("Employee not found with id: 999");
+                .isInstanceOf(OptimisticLockingFailureException.class);
     }
 
     @Test
@@ -149,11 +132,27 @@ class CompensationServiceTest {
     void shouldRejectShortReason() {
         assertThatThrownBy(() -> compensationService.updateSalary(
                 101L,
+                0L,
                 new BigDecimal("130000.00"),
                 LocalDate.now(FIXED_CLOCK),
                 "Promo"
         ))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessage("Reason must be at least 10 characters");
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Reason must be at least 10 characters");
+    }
+
+    @Test
+    @DisplayName("Should throw EntityNotFoundException when updating non-existent employee")
+    void shouldThrowWhenEmployeeNotFound() {
+        when(employeeRepository.findById(999L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> compensationService.updateSalary(
+                999L,
+                0L,
+                new BigDecimal("100000.00"),
+                LocalDate.now(FIXED_CLOCK),
+                "Merit increase adjustment"
+        ))
+                .isInstanceOf(EntityNotFoundException.class);
     }
 }

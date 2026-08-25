@@ -1,10 +1,11 @@
 package com.acme.salarymgmt.compensation.service;
 
-import com.acme.salarymgmt.audit.service.AuditService;
+import com.acme.salarymgmt.audit.port.AuditRecorder;
 import com.acme.salarymgmt.compensation.domain.Employee;
 import com.acme.salarymgmt.compensation.repository.EmployeeRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
@@ -23,7 +24,7 @@ import java.util.Currency;
 public class CompensationService {
 
     private final EmployeeRepository employeeRepository;
-    private final AuditService auditService;
+    private final AuditRecorder auditRecorder;
     private final Clock clock;
 
     @Transactional
@@ -54,7 +55,7 @@ public class CompensationService {
         String actor = resolveAuthenticatedActor();
         Instant now = Instant.now(clock);
 
-        auditService.recordInitialSetup(
+        auditRecorder.recordInitialSetup(
                 saved.getId(),
                 saved.getCurrentSalary(),
                 saved.getCurrency(),
@@ -68,6 +69,7 @@ public class CompensationService {
     @Transactional
     public Employee updateSalary(
             Long employeeId,
+            Long expectedVersion,
             BigDecimal newSalary,
             LocalDate effectiveDate,
             String reason
@@ -79,13 +81,20 @@ public class CompensationService {
         Employee employee = employeeRepository.findById(employeeId)
                 .orElseThrow(() -> new EntityNotFoundException("Employee not found with id: " + employeeId));
 
-        BigDecimal previousSalary = employee.updateSalary(newSalary, effectiveDate);
+        if (!employee.getVersion().equals(expectedVersion)) {
+            throw new OptimisticLockingFailureException(
+                    "Employee record was modified by another transaction. Please reload and retry."
+            );
+        }
+
+        LocalDate today = LocalDate.now(clock);
+        BigDecimal previousSalary = employee.updateSalary(newSalary, effectiveDate, today);
         Employee saved = employeeRepository.save(employee);
 
         String actor = resolveAuthenticatedActor();
         Instant now = Instant.now(clock);
 
-        auditService.recordSalaryChange(
+        auditRecorder.recordSalaryChange(
                 employeeId,
                 previousSalary,
                 saved.getCurrentSalary(),
@@ -96,6 +105,12 @@ public class CompensationService {
         );
 
         return saved;
+    }
+
+    @Transactional(readOnly = true)
+    public Employee getEmployee(Long employeeId) {
+        return employeeRepository.findById(employeeId)
+                .orElseThrow(() -> new EntityNotFoundException("Employee not found with id: " + employeeId));
     }
 
     @Transactional(readOnly = true)
