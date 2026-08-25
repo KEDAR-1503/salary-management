@@ -9,7 +9,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -64,22 +63,8 @@ class CompensationServiceTest {
     @DisplayName("Should create employee and record initial setup audit entry with server-derived actor")
     void shouldCreateEmployeeAndRecordInitialAudit() {
         LocalDate today = LocalDate.now(FIXED_CLOCK);
-        Employee employee = Employee.create(
-                "EMP-1001",
-                "Alice Smith",
-                "alice.smith@acme.corp",
-                "Engineering",
-                "Staff Engineer",
-                "United States",
-                USD,
-                new BigDecimal("120000.00"),
-                today
-        );
 
-        when(employeeRepository.save(any(Employee.class))).thenAnswer(invocation -> {
-            Employee saved = invocation.getArgument(0);
-            return saved;
-        });
+        when(employeeRepository.save(any(Employee.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         Employee result = compensationService.createEmployee(
                 "EMP-1001",
@@ -162,20 +147,6 @@ class CompensationServiceTest {
     @Test
     @DisplayName("Should reject salary update when reason is shorter than 10 characters")
     void shouldRejectShortReason() {
-        Employee existingEmployee = Employee.create(
-                "EMP-1001",
-                "Alice Smith",
-                "alice.smith@acme.corp",
-                "Engineering",
-                "Staff Engineer",
-                "United States",
-                USD,
-                new BigDecimal("120000.00"),
-                LocalDate.now(FIXED_CLOCK).minusDays(30)
-        );
-
-        when(employeeRepository.findById(101L)).thenReturn(Optional.of(existingEmployee));
-
         assertThatThrownBy(() -> compensationService.updateSalary(
                 101L,
                 new BigDecimal("130000.00"),

@@ -70,21 +70,23 @@ class EmployeeRepositoryTest {
 
         Employee saved = employeeRepository.saveAndFlush(employee);
         Long empId = saved.getId();
+
+        entityManager.flush();
         entityManager.clear();
 
-        // First transaction loads entity (version 0)
-        Employee firstInstance = employeeRepository.findById(empId).orElseThrow();
+        // Transaction 1 reads entity (version = 0)
+        Employee tx1Employee = employeeRepository.findById(empId).orElseThrow();
+        entityManager.detach(tx1Employee);
 
-        // Second transaction loads entity (version 0) and commits update (version becomes 1)
-        Employee secondInstance = employeeRepository.findById(empId).orElseThrow();
-        secondInstance.updateSalary(new BigDecimal("140000.00"), LocalDate.now());
-        employeeRepository.saveAndFlush(secondInstance);
-        entityManager.clear();
+        // Transaction 2 reads entity (version = 0), modifies and commits (version becomes 1)
+        Employee tx2Employee = employeeRepository.findById(empId).orElseThrow();
+        tx2Employee.updateSalary(new BigDecimal("140000.00"), LocalDate.now());
+        employeeRepository.saveAndFlush(tx2Employee);
 
-        // First transaction tries to update stale version 0
-        firstInstance.updateSalary(new BigDecimal("145000.00"), LocalDate.now());
+        // Transaction 1 attempts to save its stale detached copy (version = 0)
+        tx1Employee.updateSalary(new BigDecimal("145000.00"), LocalDate.now());
 
-        assertThatThrownBy(() -> employeeRepository.saveAndFlush(firstInstance))
+        assertThatThrownBy(() -> employeeRepository.saveAndFlush(tx1Employee))
                 .isInstanceOf(OptimisticLockingFailureException.class);
     }
 }
