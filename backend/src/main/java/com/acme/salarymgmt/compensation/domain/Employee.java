@@ -93,12 +93,15 @@ public class Employee {
         );
     }
 
-    public BigDecimal updateSalary(BigDecimal newSalary, LocalDate effectiveDate) {
+    public BigDecimal updateSalary(BigDecimal newSalary, LocalDate effectiveDate, LocalDate today) {
         if (newSalary == null || newSalary.compareTo(BigDecimal.ZERO) <= 0) {
             throw new IllegalArgumentException("New salary must be strictly positive");
         }
         if (effectiveDate == null) {
             throw new IllegalArgumentException("Effective date must not be null");
+        }
+        if (!effectiveDate.equals(today)) {
+            throw new IllegalArgumentException("Effective date must be today's date");
         }
         BigDecimal previous = this.currentSalary;
         this.currentSalary = newSalary.setScale(2, RoundingMode.HALF_EVEN);
