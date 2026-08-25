@@ -1,0 +1,9 @@
+
+# IDE & Editor
+.vscode/
+.idea/
+*.iml
+
+# OS & Environment
+.DS_Store
+*.log
