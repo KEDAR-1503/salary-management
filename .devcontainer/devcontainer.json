@@ -1,11 +1,20 @@
 {
   "name": "acme-salary-craft",
-  "dockerComposeFile": "../infra/docker-compose.yml",
-  "service": "postgres",
-  "workspaceFolder": "/workspace",
+  "image": "mcr.microsoft.com/devcontainers/java:21",
   "features": {
-    "ghcr.io/devcontainers/features/java:1": { "version": "21" },
-    "ghcr.io/devcontainers/features/node:1": { "version": "20" }
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "20"
+    },
+    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {}
   },
-  "forwardPorts": [8080, 4200, 5432]
+  "forwardPorts": [8080, 4200, 5432],
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "vscjava.vscode-java-pack",
+        "angular.ng-template"
+      ]
+    }
+  },
+  "postCreateCommand": "docker compose -f infra/docker-compose.yml up -d || true"
 }

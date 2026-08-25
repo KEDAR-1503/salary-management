@@ -2,6 +2,7 @@ version: '3.8'
 services:
   postgres:
     image: postgres:16-alpine
+    container_name: acme-postgres
     restart: unless-stopped
     environment:
       POSTGRES_DB: acme_salary_db
