@@ -6,6 +6,7 @@ import com.acme.salarymgmt.compensation.domain.Employee;
 import com.acme.salarymgmt.compensation.repository.EmployeeRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
@@ -22,12 +23,15 @@ import java.util.Random;
 
 @Slf4j
 @Component
-@Profile("!test")
+@Profile("seed")
 @RequiredArgsConstructor
 public class DataSeeder implements CommandLineRunner {
 
     private final EmployeeRepository employeeRepository;
     private final SalaryAuditLogRepository salaryAuditLogRepository;
+
+    @Value("${app.seed.batch-size:500}")
+    private int batchSize;
 
     private static final String[] DEPARTMENTS = {
             "Engineering", "Product", "Sales", "Marketing", "HR", "Finance", "Operations"
@@ -42,19 +46,19 @@ public class DataSeeder implements CommandLineRunner {
     };
 
     @Override
-    @Transactional
     public void run(String... args) {
         if (employeeRepository.count() != 0) {
             log.info("Database already seeded. Skipping initial data population.");
             return;
         }
 
-        log.info("Starting deterministic batch seeding of 10,000 employees...");
+        log.info("Starting deterministic chunked seeding of 10,000 employees...");
         Random random = new Random(42);
-        List<Employee> employees = new ArrayList<>(10000);
-        List<SalaryAuditLog> auditLogs = new ArrayList<>(10000);
         LocalDate effectiveDate = LocalDate.now();
         Instant changedAt = Instant.now();
+
+        List<Employee> batch = new ArrayList<>(batchSize);
+        int totalSeeded = 0;
 
         for (int i = 1; i <= 10000; i++) {
             int countryIdx = random.nextInt(COUNTRIES.length);
@@ -75,10 +79,21 @@ public class DataSeeder implements CommandLineRunner {
                     salary,
                     effectiveDate
             );
-            employees.add(employee);
+            batch.add(employee);
+
+            if (batch.size() == batchSize || i == 10000) {
+                totalSeeded += seedBatch(batch, changedAt);
+                batch.clear();
+            }
         }
 
+        log.info("Successfully seeded {} employees and initial audit logs.", totalSeeded);
+    }
+
+    @Transactional
+    protected int seedBatch(List<Employee> employees, Instant changedAt) {
         List<Employee> savedEmployees = employeeRepository.saveAll(employees);
+        List<SalaryAuditLog> auditLogs = new ArrayList<>(savedEmployees.size());
 
         for (Employee emp : savedEmployees) {
             auditLogs.add(SalaryAuditLog.recordInitialSetup(
@@ -91,7 +106,7 @@ public class DataSeeder implements CommandLineRunner {
         }
 
         salaryAuditLogRepository.saveAll(auditLogs);
-        log.info("Successfully seeded 10,000 employees and initial audit logs in batch.");
+        return savedEmployees.size();
     }
 
     private BigDecimal generateBaseSalary(String currency, Random random) {
