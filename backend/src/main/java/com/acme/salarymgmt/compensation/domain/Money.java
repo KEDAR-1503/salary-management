@@ -16,7 +16,7 @@ public record Money(BigDecimal amount, Currency currency) {
         if (currency == null) {
             throw new IllegalArgumentException("Currency must not be null");
         }
-        BigDecimal scaledAmount = amount.setScale(2, RoundingMode.HALF_EVEN);
-        return new Money(scaledAmount, currency);
+        BigDecimal scaled = amount.setScale(2, RoundingMode.HALF_EVEN);
+        return new Money(scaled, currency);
     }
 }
