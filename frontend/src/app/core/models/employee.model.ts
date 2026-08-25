@@ -29,7 +29,31 @@ export interface EmployeeFilterParams {
 }
 
 export interface UpdateSalaryRequest {
+  version: number;
   newSalary: number;
   effectiveDate: string;
   reason: string;
+}
+
+export interface SalaryAuditLog {
+  id: number;
+  employeeId: number;
+  previousSalary: number | null;
+  newSalary: number;
+  currency: string;
+  changedBy: string;
+  reason: string;
+  changedAt: string;
+}
+
+export interface CreateEmployeeRequest {
+  employeeIdentifier: string;
+  fullName: string;
+  email: string;
+  department: string;
+  roleTitle: string;
+  country: string;
+  currency: string;
+  initialSalary: number;
+  effectiveDate: string;
 }
