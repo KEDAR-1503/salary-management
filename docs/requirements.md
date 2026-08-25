@@ -52,7 +52,7 @@ The first release succeeds when an authorised HR Manager can:
 
 - The directory uses server-side pagination, search, and filters; it does not load all 10,000 employees into the browser.
 - A successful salary update changes the current salary and adds one append-only history record with the authenticated actor and reason.
-- A salary update accepts only today's effective date and retains the employee's existing currency.
+- A salary update accepts only today's effective date (UTC calendar date, `LocalDate.now(clock)`) and retains the employee's existing currency.
 - A conflicting update preserves the winning change, records no false history item, and tells the HR Manager how to recover.
 - Analytics visibly separate every `(department, currency)` or `(country, currency)` metric.
 - A clean checkout can seed exactly 10,000 deterministic employees, run the automated checks, and start the application.

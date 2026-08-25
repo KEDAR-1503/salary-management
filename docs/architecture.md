@@ -1,8 +1,9 @@
 # ACME Salary Management — Technical Architecture
 
 **Status:** Baseline for implementation
-**Companion product definition:** [requirements.md](requirements.md)
-**Database design:** [database-architecture.md](database-architecture.md)
+**Companion product definition:** [requirements.md](requirements.md)  
+**Database design:** [database-architecture.md](database-architecture.md)  
+**Remaining work:** [commit-plan.md](commit-plan.md)
 
 ## Architecture decision
 
@@ -43,7 +44,8 @@ The backend is a modular monolith. Modules communicate through application ports
 | `audit` | Immutable salary-change history | Updating employee salary |
 | `analytics` | Read-only, database-projected compensation metrics | Loading all employees into memory |
 | `security` | Authentication and HR Manager authorisation | Client-supplied audit actors |
-| `currency` | Currency code validation only | Conversion rates or cross-currency arithmetic in v1 |
+
+Currency code validation uses `java.util.Currency` inside domain value objects (`Money`, `Employee`); there is no separate `currency` module.
 
 `compensation` depends on the `audit` module's public `AuditRecorder` application port, not its repository. The salary-change application service invokes that port synchronously inside its transaction after the versioned employee update. The `audit` module owns the port's implementation and persistence. This keeps the operation atomic without breaking module ownership; ArchUnit permits the public port only.
 

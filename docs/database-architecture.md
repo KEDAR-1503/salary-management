@@ -2,7 +2,7 @@
 
 **Status:** Baseline for implementation
 **Database:** PostgreSQL 16
-**Companion documents:** [requirements.md](requirements.md) and [architecture.md](architecture.md)
+**Companion documents:** [requirements.md](requirements.md), [architecture.md](architecture.md), [commit-plan.md](commit-plan.md)
 
 ## Purpose and boundaries
 
