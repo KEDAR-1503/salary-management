@@ -3,10 +3,8 @@ package com.acme.salarymgmt.compensation.api;
 import com.acme.salarymgmt.compensation.domain.Employee;
 import com.acme.salarymgmt.compensation.dto.CreateEmployeeRequest;
 import com.acme.salarymgmt.compensation.dto.UpdateSalaryRequest;
-import com.acme.salarymgmt.compensation.repository.EmployeeRepository;
 import com.acme.salarymgmt.compensation.service.CompensationService;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -49,9 +47,6 @@ class CompensationControllerTest {
 
     @MockBean
     private CompensationService compensationService;
-
-    @MockBean
-    private EmployeeRepository employeeRepository;
 
     @Test
     @WithMockUser(username = "hr_manager", roles = {"HR_MANAGER"})
@@ -179,7 +174,7 @@ class CompensationControllerTest {
                 LocalDate.now()
         );
 
-        when(employeeRepository.findWithFilters(any(), any(), any(), any()))
+        when(compensationService.getEmployees(any(), any(), any(), any()))
                 .thenReturn(new PageImpl<>(List.of(emp), PageRequest.of(0, 20), 1));
 
         mockMvc.perform(get("/api/v1/employees")

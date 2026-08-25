@@ -4,7 +4,6 @@ import com.acme.salarymgmt.compensation.domain.Employee;
 import com.acme.salarymgmt.compensation.dto.CreateEmployeeRequest;
 import com.acme.salarymgmt.compensation.dto.EmployeeResponse;
 import com.acme.salarymgmt.compensation.dto.UpdateSalaryRequest;
-import com.acme.salarymgmt.compensation.repository.EmployeeRepository;
 import com.acme.salarymgmt.compensation.service.CompensationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -30,7 +29,6 @@ import java.util.Currency;
 public class CompensationController {
 
     private final CompensationService compensationService;
-    private final EmployeeRepository employeeRepository;
 
     @PostMapping
     public ResponseEntity<EmployeeResponse> createEmployee(@Valid @RequestBody CreateEmployeeRequest request) {
@@ -69,7 +67,7 @@ public class CompensationController {
             @RequestParam(required = false) String search,
             @PageableDefault(size = 20) Pageable pageable
     ) {
-        Page<EmployeeResponse> responses = employeeRepository.findWithFilters(department, country, search, pageable)
+        Page<EmployeeResponse> responses = compensationService.getEmployees(department, country, search, pageable)
                 .map(EmployeeResponse::fromDomain);
         return ResponseEntity.ok(responses);
     }

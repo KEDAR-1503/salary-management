@@ -5,6 +5,8 @@ import com.acme.salarymgmt.compensation.domain.Employee;
 import com.acme.salarymgmt.compensation.repository.EmployeeRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -94,6 +96,11 @@ public class CompensationService {
         );
 
         return saved;
+    }
+
+    @Transactional(readOnly = true)
+    public Page<Employee> getEmployees(String department, String country, String search, Pageable pageable) {
+        return employeeRepository.findWithFilters(department, country, search, pageable);
     }
 
     private String resolveAuthenticatedActor() {
