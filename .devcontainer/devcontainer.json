@@ -1,11 +1,10 @@
 {
   "name": "acme-salary-craft",
-  "image": "mcr.microsoft.com/devcontainers/java:21",
+  "image": "mcr.microsoft.com/devcontainers/java:21-bookworm",
   "features": {
     "ghcr.io/devcontainers/features/node:1": {
       "version": "20"
-    },
-    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {}
+    }
   },
   "forwardPorts": [8080, 4200, 5432],
   "customizations": {
@@ -15,6 +14,5 @@
         "angular.ng-template"
       ]
     }
-  },
-  "postCreateCommand": "docker compose -f infra/docker-compose.yml up -d || true"
+  }
 }
