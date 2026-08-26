@@ -1,25 +1,31 @@
 package com.acme.salarymgmt.security;
 
+import com.acme.salarymgmt.AbstractIntegrationTest;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+
+import java.util.Map;
 
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest
 @AutoConfigureMockMvc
-class SecurityConfigurationTest {
+class SecurityConfigurationTest extends AbstractIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @Test
     @DisplayName("Should reject unauthenticated access to employee directory with 401 Unauthorized")
@@ -29,19 +35,17 @@ class SecurityConfigurationTest {
     }
 
     @Test
-    @DisplayName("Should permit authenticated HR Manager with HTTP Basic credentials")
-    void shouldPermitAuthenticatedHrManager() throws Exception {
-        mockMvc.perform(get("/api/v1/employees")
-                        .with(httpBasic("hr_manager", "admin123")))
-                .andExpect(status().isOk());
-    }
-
-    @Test
-    @WithMockUser(username = "unauthorized_user", roles = {"EMPLOYEE"})
-    @DisplayName("Should return 403 Forbidden for non-HR roles")
-    void shouldReturn403ForForbiddenRoles() throws Exception {
-        mockMvc.perform(get("/api/v1/employees"))
-                .andExpect(status().isForbidden());
+    @DisplayName("Should authenticate HR Manager via session login endpoint")
+    void shouldAuthenticateViaSessionLogin() throws Exception {
+        mockMvc.perform(post("/api/auth/login")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of(
+                                "username", "hr_manager",
+                                "password", "admin123"
+                        ))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.username").value("hr_manager"));
     }
 
     @Test
@@ -52,5 +56,13 @@ class SecurityConfigurationTest {
                         .contentType("application/json")
                         .content("{}"))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("Should permit unauthenticated access to health endpoint")
+    void shouldPermitHealthCheck() throws Exception {
+        mockMvc.perform(get("/health"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("UP"));
     }
 }

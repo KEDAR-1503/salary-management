@@ -1,6 +1,7 @@
 package com.acme.salarymgmt.config;
 
 import com.acme.salarymgmt.audit.repository.SalaryAuditLogRepository;
+import com.acme.salarymgmt.compensation.domain.Employee;
 import com.acme.salarymgmt.compensation.repository.EmployeeRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -10,8 +11,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.atLeastOnce;
@@ -35,8 +36,14 @@ class DataSeederTest {
     @DisplayName("Should seed in batches when database is empty")
     void shouldSeedWhenDatabaseIsEmpty() {
         ReflectionTestUtils.setField(dataSeeder, "batchSize", 500);
+        AtomicLong idSequence = new AtomicLong(1L);
         when(employeeRepository.count()).thenReturn(0L);
-        when(employeeRepository.saveAll(anyList())).thenAnswer(inv -> inv.getArgument(0));
+        when(employeeRepository.saveAll(anyList())).thenAnswer(inv -> {
+            @SuppressWarnings("unchecked")
+            List<Employee> employees = inv.getArgument(0);
+            employees.forEach(emp -> ReflectionTestUtils.setField(emp, "id", idSequence.getAndIncrement()));
+            return employees;
+        });
 
         dataSeeder.run(new String[0]);
 
