@@ -25,10 +25,10 @@ import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 @EnableMethodSecurity
 public class SecurityConfig {
 
-    @Value("${app.security.hr-manager.username}")
+    @Value("${app.security.hr-manager.username:hr_manager}")
     private String hrManagerUsername;
 
-    @Value("${app.security.hr-manager.password}")
+    @Value("${app.security.hr-manager.password:admin123}")
     private String hrManagerPassword;
 
     @Bean
