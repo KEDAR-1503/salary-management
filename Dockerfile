@@ -11,7 +11,9 @@ RUN npm run build
 # Stage 2: Build Spring Boot
 FROM eclipse-temurin:21-jdk-alpine AS backend-build
 WORKDIR /app
-COPY backend/mvnw backend/.mvn backend/pom.xml ./
+COPY backend/pom.xml ./
+COPY backend/mvnw ./
+COPY backend/.mvn ./.mvn
 RUN chmod +x mvnw && ./mvnw dependency:go-offline -B
 COPY backend/src ./src
 COPY --from=frontend-build /app/frontend/dist/frontend ./src/main/resources/static
