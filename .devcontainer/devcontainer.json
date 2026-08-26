@@ -5,11 +5,18 @@
     "ghcr.io/devcontainers/features/node:1": {
       "version": "20"
     },
+    "ghcr.io/devcontainers/features/postgres:1": {
+      "version": "16",
+      "username": "acme_user",
+      "password": "acme_password",
+      "database": "acme_salary_db"
+    },
     "ghcr.io/devcontainers/features/sshd:1": {
       "version": "latest"
     }
   },
   "forwardPorts": [8080, 4200, 5432],
+  "postCreateCommand": "cd frontend && npm install",
   "customizations": {
     "vscode": {
       "extensions": [

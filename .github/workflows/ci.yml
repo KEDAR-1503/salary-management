@@ -9,26 +9,9 @@ on:
 jobs:
   backend-test:
     runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_DB: acme_salary_db
-          POSTGRES_USER: acme_user
-          POSTGRES_PASSWORD: acme_password
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U acme_user -d acme_salary_db"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
     env:
       HR_MANAGER_USERNAME: hr_manager
       HR_MANAGER_PASSWORD: admin123
-      SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/acme_salary_db
-      SPRING_DATASOURCE_USERNAME: acme_user
-      SPRING_DATASOURCE_PASSWORD: acme_password
       TESTCONTAINERS_RYUK_DISABLED: true
     steps:
       - uses: actions/checkout@v4
