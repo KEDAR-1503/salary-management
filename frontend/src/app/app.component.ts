@@ -14,8 +14,12 @@ import { toSignal } from '@angular/core/rxjs-interop';
       <nav class="nav">
         <a routerLink="/directory" class="brand">ACME Salary</a>
         <div class="links">
-          <a routerLink="/directory">Directory</a>
-          <a routerLink="/analytics">Analytics</a>
+          @if (currentPath() !== '/directory') {
+            <a routerLink="/directory">Directory</a>
+          }
+          @if (currentPath() !== '/analytics') {
+            <a routerLink="/analytics">Analytics</a>
+          }
           <button type="button" (click)="logout()">Logout</button>
         </div>
       </nav>
@@ -32,12 +36,17 @@ import { toSignal } from '@angular/core/rxjs-interop';
   `]
 })
 export class AppComponent {
-  private readonly showNav$ = this.router.events.pipe(
+  private readonly navigationEnd$ = this.router.events.pipe(
     filter((e): e is NavigationEnd => e instanceof NavigationEnd),
-    map(e => !e.urlAfterRedirects.startsWith('/login')),
-    startWith(!this.router.url.startsWith('/login'))
+    map(e => e.urlAfterRedirects.split('?')[0]),
+    startWith(this.router.url.split('?')[0])
   );
-  readonly showNav = toSignal(this.showNav$, { initialValue: false });
+
+  readonly currentPath = toSignal(this.navigationEnd$, { initialValue: '/' });
+  readonly showNav = toSignal(
+    this.navigationEnd$.pipe(map(path => !path.startsWith('/login'))),
+    { initialValue: false }
+  );
 
   constructor(private auth: AuthService, private router: Router) {}
 

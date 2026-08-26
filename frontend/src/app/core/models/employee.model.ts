@@ -28,6 +28,11 @@ export interface EmployeeFilterParams {
   search?: string;
 }
 
+export interface EmployeeFilterOptions {
+  departments: string[];
+  countries: string[];
+}
+
 export interface UpdateSalaryRequest {
   version: number;
   newSalary: number;

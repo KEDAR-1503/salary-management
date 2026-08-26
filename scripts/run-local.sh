@@ -9,13 +9,18 @@ export SPRING_DATASOURCE_URL="${SPRING_DATASOURCE_URL:-jdbc:postgresql://localho
 export SPRING_DATASOURCE_USERNAME="${SPRING_DATASOURCE_USERNAME:-acme_user}"
 export SPRING_DATASOURCE_PASSWORD="${SPRING_DATASOURCE_PASSWORD:-acme_password}"
 
+if ! command -v pg_isready >/dev/null 2>&1 || ! pg_isready -h localhost -p 5432 >/dev/null 2>&1; then
+  echo "ERROR: PostgreSQL not reachable. Rebuild devcontainer or start docker compose."
+  exit 1
+fi
+
 echo "Starting backend on :8080 (profiles: local,seed)..."
 cd "$ROOT/backend"
 ./mvnw spring-boot:run -Dspring-boot.run.profiles=local,seed &
 BACKEND_PID=$!
 
 echo "Waiting for /health..."
-for i in $(seq 1 60); do
+for _ in $(seq 1 60); do
   if curl -sf http://localhost:8080/health >/dev/null 2>&1; then
     echo "Backend is up."
     break
@@ -23,16 +28,16 @@ for i in $(seq 1 60); do
   sleep 2
 done
 
-echo "Starting frontend on :4200 (proxy -> backend)..."
+echo "Starting frontend dev server on :4200 (proxy -> :8080)..."
 cd "$ROOT/frontend"
 npm start &
 FRONTEND_PID=$!
 
 echo ""
-echo "App running:"
+echo "Dev mode running:"
 echo "  Frontend: http://localhost:4200"
 echo "  Backend:  http://localhost:8080"
-echo "  Login:    hr_manager / admin123"
+echo "  Login:    $HR_MANAGER_USERNAME / $HR_MANAGER_PASSWORD"
 echo ""
 echo "Press Ctrl+C to stop."
 

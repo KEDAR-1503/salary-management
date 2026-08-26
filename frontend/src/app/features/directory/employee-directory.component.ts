@@ -17,10 +17,20 @@ import { Employee } from '../../core/models/employee.model';
         <a routerLink="/employees/new" class="btn">Create Employee</a>
       </header>
       <div class="filters">
-        <input [(ngModel)]="search" placeholder="Search by name or ID" (keyup.enter)="load()" />
-        <input [(ngModel)]="department" placeholder="Department" (keyup.enter)="load()" />
-        <input [(ngModel)]="country" placeholder="Country" (keyup.enter)="load()" />
-        <button (click)="load()">Search</button>
+        <input [(ngModel)]="search" placeholder="Search by name or ID" (keyup.enter)="applyFilters()" />
+        <select [(ngModel)]="department" (ngModelChange)="applyFilters()" aria-label="Department">
+          <option value="">All departments</option>
+          @for (dept of departments(); track dept) {
+            <option [value]="dept">{{ dept }}</option>
+          }
+        </select>
+        <select [(ngModel)]="country" (ngModelChange)="applyFilters()" aria-label="Country">
+          <option value="">All countries</option>
+          @for (c of countries(); track c) {
+            <option [value]="c">{{ c }}</option>
+          }
+        </select>
+        <button type="button" (click)="applyFilters()">Search</button>
       </div>
       @if (loading()) { <p>Loading...</p> }
       @if (error()) { <p class="error">{{ error() }}</p> }
@@ -46,16 +56,17 @@ import { Employee } from '../../core/models/employee.model';
         </tbody>
       </table>
       <div class="pagination">
-        <button [disabled]="page() === 0" (click)="prevPage()">Previous</button>
+        <button type="button" [disabled]="page() === 0" (click)="prevPage()">Previous</button>
         <span>Page {{ page() + 1 }} of {{ totalPages() }}</span>
-        <button [disabled]="page() + 1 >= totalPages()" (click)="nextPage()">Next</button>
+        <button type="button" [disabled]="page() + 1 >= totalPages()" (click)="nextPage()">Next</button>
       </div>
     </section>
   `,
   styles: [`
     .toolbar { display: flex; justify-content: space-between; align-items: center; }
     .filters { display: flex; gap: 0.5rem; margin: 1rem 0; flex-wrap: wrap; }
-    .filters input { padding: 0.5rem; }
+    .filters input, .filters select { padding: 0.5rem; min-width: 10rem; }
+    .filters button { padding: 0.5rem 1rem; cursor: pointer; }
     table { width: 100%; border-collapse: collapse; }
     th, td { border-bottom: 1px solid #eee; padding: 0.5rem; text-align: left; }
     .pagination { margin-top: 1rem; display: flex; gap: 1rem; align-items: center; }
@@ -67,6 +78,8 @@ export class EmployeeDirectoryComponent implements OnInit {
   private readonly employeeService = inject(EmployeeService);
 
   readonly employees = signal<Employee[]>([]);
+  readonly departments = signal<string[]>([]);
+  readonly countries = signal<string[]>([]);
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
   readonly page = signal(0);
@@ -76,7 +89,20 @@ export class EmployeeDirectoryComponent implements OnInit {
   department = '';
   country = '';
 
-  ngOnInit(): void { this.load(); }
+  ngOnInit(): void {
+    this.employeeService.getFilterOptions().subscribe({
+      next: options => {
+        this.departments.set(options.departments);
+        this.countries.set(options.countries);
+      }
+    });
+    this.load();
+  }
+
+  applyFilters(): void {
+    this.page.set(0);
+    this.load();
+  }
 
   load(): void {
     this.loading.set(true);

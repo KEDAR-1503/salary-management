@@ -18,6 +18,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Currency;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -116,6 +117,16 @@ public class CompensationService {
     @Transactional(readOnly = true)
     public Page<Employee> getEmployees(String department, String country, String search, Pageable pageable) {
         return employeeRepository.findWithFilters(department, country, search, pageable);
+    }
+
+    @Transactional(readOnly = true)
+    public List<String> getDistinctDepartments() {
+        return employeeRepository.findDistinctDepartments();
+    }
+
+    @Transactional(readOnly = true)
+    public List<String> getDistinctCountries() {
+        return employeeRepository.findDistinctCountries();
     }
 
     private String resolveAuthenticatedActor() {

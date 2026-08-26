@@ -4,6 +4,7 @@ import com.acme.salarymgmt.audit.dto.SalaryAuditLogResponse;
 import com.acme.salarymgmt.audit.service.AuditService;
 import com.acme.salarymgmt.compensation.domain.Employee;
 import com.acme.salarymgmt.compensation.dto.CreateEmployeeRequest;
+import com.acme.salarymgmt.compensation.dto.EmployeeFilterOptionsResponse;
 import com.acme.salarymgmt.compensation.dto.EmployeeResponse;
 import com.acme.salarymgmt.compensation.dto.UpdateSalaryRequest;
 import com.acme.salarymgmt.compensation.service.CompensationService;
@@ -63,6 +64,14 @@ public class CompensationController {
                 request.reason()
         );
         return ResponseEntity.ok(EmployeeResponse.fromDomain(updated));
+    }
+
+    @GetMapping("/filter-options")
+    public ResponseEntity<EmployeeFilterOptionsResponse> getFilterOptions() {
+        return ResponseEntity.ok(new EmployeeFilterOptionsResponse(
+                compensationService.getDistinctDepartments(),
+                compensationService.getDistinctCountries()
+        ));
     }
 
     @GetMapping("/{id}")

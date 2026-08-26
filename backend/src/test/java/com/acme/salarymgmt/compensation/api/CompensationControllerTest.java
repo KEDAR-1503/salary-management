@@ -189,4 +189,70 @@ class CompensationControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[0].employeeIdentifier").value("EMP-1001"));
     }
+
+    @Test
+    @WithMockUser(username = "hr_manager", roles = {"HR_MANAGER"})
+    @DisplayName("POST /api/v1/employees - should create employee and return 201")
+    void shouldCreateEmployee() throws Exception {
+        CreateEmployeeRequest request = new CreateEmployeeRequest(
+                "EMP-2001",
+                "Dana Lee",
+                "dana.lee@acme.corp",
+                "Product",
+                "Product Manager",
+                "Singapore",
+                "SGD",
+                new BigDecimal("98000.00"),
+                LocalDate.now()
+        );
+
+        Employee created = Employee.create(
+                request.employeeIdentifier(),
+                request.fullName(),
+                request.email(),
+                request.department(),
+                request.roleTitle(),
+                request.country(),
+                Currency.getInstance("SGD"),
+                request.initialSalary(),
+                request.effectiveDate()
+        );
+        org.springframework.test.util.ReflectionTestUtils.setField(created, "id", 42L);
+
+        when(compensationService.createEmployee(
+                eq("EMP-2001"),
+                eq("Dana Lee"),
+                eq("dana.lee@acme.corp"),
+                eq("Product"),
+                eq("Product Manager"),
+                eq("Singapore"),
+                eq(Currency.getInstance("SGD")),
+                any(),
+                any()
+        )).thenReturn(created);
+
+        mockMvc.perform(post("/api/v1/employees")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").value(42))
+                .andExpect(jsonPath("$.employeeIdentifier").value("EMP-2001"))
+                .andExpect(jsonPath("$.currency").value("SGD"));
+    }
+
+    @Test
+    @WithMockUser(username = "hr_manager", roles = {"HR_MANAGER"})
+    @DisplayName("GET /api/v1/employees/filter-options - should return distinct departments and countries")
+    void shouldReturnFilterOptions() throws Exception {
+        when(compensationService.getDistinctDepartments()).thenReturn(List.of("Engineering", "Finance"));
+        when(compensationService.getDistinctCountries()).thenReturn(List.of("Germany", "India"));
+
+        mockMvc.perform(get("/api/v1/employees/filter-options"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.departments[0]").value("Engineering"))
+                .andExpect(jsonPath("$.departments[1]").value("Finance"))
+                .andExpect(jsonPath("$.countries[0]").value("Germany"))
+                .andExpect(jsonPath("$.countries[1]").value("India"));
+    }
 }

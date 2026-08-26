@@ -12,9 +12,13 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.OptimisticLockingFailureException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
 import java.time.Clock;
@@ -154,5 +158,72 @@ class CompensationServiceTest {
                 "Merit increase adjustment"
         ))
                 .isInstanceOf(EntityNotFoundException.class);
+    }
+
+    @Test
+    @DisplayName("Should create employee and record initial setup audit")
+    void shouldCreateEmployeeAndRecordInitialAudit() {
+        LocalDate effectiveDate = LocalDate.now(FIXED_CLOCK);
+        when(employeeRepository.save(any(Employee.class))).thenAnswer(invocation -> {
+            Employee saved = invocation.getArgument(0);
+            ReflectionTestUtils.setField(saved, "id", 42L);
+            return saved;
+        });
+
+        Employee created = compensationService.createEmployee(
+                "EMP-2001",
+                "Dana Lee",
+                "dana.lee@acme.corp",
+                "Product",
+                "Product Manager",
+                "Singapore",
+                Currency.getInstance("SGD"),
+                new BigDecimal("98000.00"),
+                effectiveDate
+        );
+
+        assertThat(created.getId()).isEqualTo(42L);
+        assertThat(created.getEmployeeIdentifier()).isEqualTo("EMP-2001");
+        verify(auditRecorder).recordInitialSetup(
+                eq(42L),
+                eq(new BigDecimal("98000.00")),
+                eq(Currency.getInstance("SGD")),
+                eq("hr_manager"),
+                eq(FIXED_INSTANT)
+        );
+    }
+
+    @Test
+    @DisplayName("Should delegate filtered employee listing to repository")
+    void shouldListEmployeesWithFilters() {
+        Employee emp = Employee.create(
+                "EMP-1001",
+                "Alice Smith",
+                "alice.smith@acme.corp",
+                "Engineering",
+                "Staff Engineer",
+                "United States",
+                USD,
+                new BigDecimal("120000.00"),
+                LocalDate.now(FIXED_CLOCK)
+        );
+        PageRequest pageable = PageRequest.of(0, 20);
+        when(employeeRepository.findWithFilters("Engineering", null, null, pageable))
+                .thenReturn(new PageImpl<>(List.of(emp), pageable, 1));
+
+        Page<Employee> page = compensationService.getEmployees("Engineering", null, null, pageable);
+
+        assertThat(page.getContent()).hasSize(1);
+        assertThat(page.getContent().getFirst().getEmployeeIdentifier()).isEqualTo("EMP-1001");
+    }
+
+    @Test
+    @DisplayName("Should return distinct department and country filter options")
+    void shouldReturnDistinctFilterOptions() {
+        when(employeeRepository.findDistinctDepartments()).thenReturn(List.of("Engineering", "Finance"));
+        when(employeeRepository.findDistinctCountries()).thenReturn(List.of("India", "United States"));
+
+        assertThat(compensationService.getDistinctDepartments()).containsExactly("Engineering", "Finance");
+        assertThat(compensationService.getDistinctCountries()).containsExactly("India", "United States");
     }
 }

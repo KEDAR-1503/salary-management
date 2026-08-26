@@ -6,6 +6,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.OptimisticLockingFailureException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -75,5 +77,72 @@ class EmployeeRepositoryTest extends AbstractIntegrationTest {
 
         assertThatThrownBy(() -> employeeRepository.saveAndFlush(tx1Employee))
                 .isInstanceOf(OptimisticLockingFailureException.class);
+    }
+
+    @Test
+    @DisplayName("Should list employees when all optional filters are null (Postgres null bind regression)")
+    void shouldListEmployeesWithNullFilters() {
+        employeeRepository.saveAndFlush(Employee.create(
+                "EMP-9003",
+                "Carol Nguyen",
+                "carol.nguyen@acme.corp",
+                "Engineering",
+                "Engineer",
+                "Vietnam",
+                USD,
+                new BigDecimal("90000.00"),
+                LocalDate.now()
+        ));
+
+        Page<Employee> page = employeeRepository.findWithFilters(null, null, null, PageRequest.of(0, 10));
+
+        assertThat(page.getContent()).isNotEmpty();
+        assertThat(page.getContent().stream().map(Employee::getEmployeeIdentifier))
+                .contains("EMP-9003");
+    }
+
+    @Test
+    @DisplayName("Should return distinct sorted departments and countries for filter dropdowns")
+    void shouldReturnDistinctFilterOptions() {
+        employeeRepository.saveAndFlush(Employee.create(
+                "EMP-9004",
+                "Dev One",
+                "dev.one@acme.corp",
+                "Engineering",
+                "Engineer",
+                "India",
+                USD,
+                new BigDecimal("80000.00"),
+                LocalDate.now()
+        ));
+        employeeRepository.saveAndFlush(Employee.create(
+                "EMP-9005",
+                "Sales One",
+                "sales.one@acme.corp",
+                "Sales",
+                "AE",
+                "United States",
+                USD,
+                new BigDecimal("90000.00"),
+                LocalDate.now()
+        ));
+        employeeRepository.saveAndFlush(Employee.create(
+                "EMP-9006",
+                "Dev Two",
+                "dev.two@acme.corp",
+                "Engineering",
+                "Engineer",
+                "India",
+                USD,
+                new BigDecimal("85000.00"),
+                LocalDate.now()
+        ));
+
+        assertThat(employeeRepository.findDistinctDepartments())
+                .contains("Engineering", "Sales")
+                .doesNotHaveDuplicates();
+        assertThat(employeeRepository.findDistinctCountries())
+                .contains("India", "United States")
+                .doesNotHaveDuplicates();
     }
 }

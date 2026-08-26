@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
-import { Employee, EmployeeFilterParams, PaginatedResponse, UpdateSalaryRequest } from '../models/employee.model';
+import { Employee, EmployeeFilterOptions, EmployeeFilterParams, PaginatedResponse, UpdateSalaryRequest } from '../models/employee.model';
 
 export class SalaryConflictError extends Error {
   constructor(message: string) {
@@ -24,6 +24,10 @@ export class EmployeeService {
     if (filters.country) params['country'] = filters.country;
     if (filters.search) params['search'] = filters.search;
     return this.http.get<PaginatedResponse<Employee>>(this.baseUrl, { params });
+  }
+
+  getFilterOptions(): Observable<EmployeeFilterOptions> {
+    return this.http.get<EmployeeFilterOptions>(`${this.baseUrl}/filter-options`);
   }
 
   getEmployee(id: number): Observable<Employee> {

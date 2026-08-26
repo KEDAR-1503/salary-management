@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 import { EmployeeService } from './employee.service';
-import { Employee, PaginatedResponse, UpdateSalaryRequest } from '../models/employee.model';
+import { Employee, EmployeeFilterOptions, PaginatedResponse, UpdateSalaryRequest } from '../models/employee.model';
 
 describe('EmployeeService', () => {
   let service: EmployeeService;
@@ -34,6 +34,22 @@ describe('EmployeeService', () => {
 
     const req = httpMock.expectOne(r => r.url === '/api/v1/employees' && r.params.get('department') === 'Engineering');
     req.flush(mockResponse);
+  });
+
+  it('should fetch filter options for department and country dropdowns', () => {
+    const mockOptions: EmployeeFilterOptions = {
+      departments: ['Engineering', 'Finance'],
+      countries: ['India', 'United States']
+    };
+
+    service.getFilterOptions().subscribe(options => {
+      expect(options.departments).toEqual(['Engineering', 'Finance']);
+      expect(options.countries).toEqual(['India', 'United States']);
+    });
+
+    const req = httpMock.expectOne('/api/v1/employees/filter-options');
+    expect(req.request.method).toBe('GET');
+    req.flush(mockOptions);
   });
 
   it('should send PUT with version on salary update', () => {

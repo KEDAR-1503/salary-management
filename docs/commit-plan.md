@@ -25,22 +25,22 @@ Commit message format: `<type>(<module>): <what changed>`
 
 | # | Type | Commit | Status |
 |---|------|--------|--------|
-| 1 | `docs` | Rewrite commit plan, move docs to `docs/`, README entry, UTC timezone rule, drop empty `currency` module | [ ] |
-| 2 | `chore` | Wire Flyway + Hibernate validate + Testcontainers Postgres; retire H2 for integration tests | [ ] |
-| 3 | `feat` | Domain today-only date, currency immutability, reason validation via `Clock` | [ ] |
-| 4 | `feat` | Client `version` on salary PUT; stale write returns 409 with integration test | [ ] |
-| 5 | `feat` | GET `/api/v1/employees/{id}` and GET `/api/v1/employees/{id}/history` | [ ] |
-| 6 | `feat` | Native SQL `percentile_cont` median + NUMERIC averages on Postgres | [ ] |
-| 7 | `feat` | Session cookie auth + env-var HR credentials; permit `/health` | [ ] |
-| 8 | `feat` | Chunked deterministic 10k seed (`seed` profile, batch size 500) | [ ] |
-| 9 | `feat` | DB-touching `/health` endpoint | [ ] |
-| 10 | `feat` | Angular login + XSRF-aware session auth | [ ] |
-| 11 | `feat` | Angular employee directory (search, filter, pagination) | [ ] |
-| 12 | `feat` | Angular create-employee form | [ ] |
-| 13 | `feat` | Angular employee detail, history, salary edit with 409 recovery | [ ] |
-| 14 | `feat` | Angular analytics dashboard (currency-separated cards) | [ ] |
-| 15 | `ci` | Full pipeline: backend tests + Testcontainers + ArchUnit + frontend tests | [ ] |
-| 16 | `chore` | Multi-stage Docker build; Render + Neon deployment config | [ ] |
+| 1 | `docs` | Rewrite commit plan, move docs to `docs/`, README entry, UTC timezone rule, drop empty `currency` module | [x] |
+| 2 | `chore` | Wire Flyway + Hibernate validate + Testcontainers Postgres; retire H2 for integration tests | [x] |
+| 3 | `feat` | Domain today-only date, currency immutability, reason validation via `Clock` | [x] |
+| 4 | `feat` | Client `version` on salary PUT; stale write returns 409 with integration test | [x] |
+| 5 | `feat` | GET `/api/v1/employees/{id}` and GET `/api/v1/employees/{id}/history` | [x] |
+| 6 | `feat` | Native SQL `percentile_cont` median + NUMERIC averages on Postgres | [x] |
+| 7 | `feat` | Session cookie auth + env-var HR credentials; permit `/health` | [x] |
+| 8 | `feat` | Chunked deterministic 10k seed (`seed` profile, batch size 500) | [x] |
+| 9 | `feat` | DB-touching `/health` endpoint | [x] |
+| 10 | `feat` | Angular login + XSRF-aware session auth | [x] |
+| 11 | `feat` | Angular employee directory (search, filter, pagination) | [x] |
+| 12 | `feat` | Angular create-employee form | [x] |
+| 13 | `feat` | Angular employee detail, history, salary edit with 409 recovery | [x] |
+| 14 | `feat` | Angular analytics dashboard (currency-separated cards) | [x] |
+| 15 | `ci` | Full pipeline: backend tests + Testcontainers + ArchUnit + frontend tests | [x] |
+| 16 | `chore` | Multi-stage Docker build; Render + Neon deployment config | [x] |
 | 17 | `docs` | README setup guide, EXPLAIN ANALYZE evidence, AI-use log | [ ] |
 | 18 | `docs` | Demo video link (after deployment) | [ ] |
 
