@@ -28,6 +28,8 @@ import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -192,6 +194,29 @@ class CompensationControllerTest {
                         .param("size", "20"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[0].employeeIdentifier").value("EMP-1001"));
+    }
+
+    @Test
+    @WithMockUser(username = "hr_manager", roles = {"HR_MANAGER"})
+    @DisplayName("GET /api/v1/employees - should forward exact search term to service (positive)")
+    void shouldForwardExactSearchTermToService() throws Exception {
+        when(compensationService.getEmployees(isNull(), isNull(), eq("Worker 1"), any()))
+                .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 20), 0));
+
+        mockMvc.perform(get("/api/v1/employees")
+                        .param("search", "Worker 1")
+                        .param("page", "0")
+                        .param("size", "20"))
+                .andExpect(status().isOk());
+
+        verify(compensationService).getEmployees(isNull(), isNull(), eq("Worker 1"), any());
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/employees - should reject unauthenticated search (negative)")
+    void shouldRejectUnauthenticatedEmployeeSearch() throws Exception {
+        mockMvc.perform(get("/api/v1/employees").param("search", "Worker 1"))
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
