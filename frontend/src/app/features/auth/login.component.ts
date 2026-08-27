@@ -28,6 +28,9 @@ import { AuthService } from '../../core/services/auth.service';
     button { width: 100%; padding: 0.75rem; background: #1976d2; color: white; border: none; border-radius: 4px; cursor: pointer; }
     button:disabled { opacity: 0.6; cursor: not-allowed; }
     .error { color: #c62828; }
+    @media (max-width: 640px) {
+      .login-card { margin: 1.5rem 1rem; padding: 1.25rem; }
+    }
   `]
 })
 export class LoginComponent {

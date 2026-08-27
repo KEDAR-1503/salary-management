@@ -45,6 +45,9 @@ import { DepartmentCompensationSummary, CountryCompensationSummary } from '../..
     .card { border: 1px solid #ddd; border-radius: 8px; padding: 1rem; }
     .card h4 { margin: 0 0 0.5rem; }
     .card p { margin: 0.25rem 0; }
+    @media (max-width: 640px) {
+      .cards { grid-template-columns: 1fr; }
+    }
   `]
 })
 export class AnalyticsDashboardComponent implements OnInit {

@@ -34,27 +34,29 @@ import { Employee } from '../../core/models/employee.model';
       </div>
       @if (loading()) { <p>Loading...</p> }
       @if (error()) { <p class="error">{{ error() }}</p> }
-      <table>
-        <thead>
-          <tr>
-            <th>ID</th><th>Name</th><th>Department</th><th>Country</th>
-            <th>Salary</th><th>Currency</th><th></th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (emp of employees(); track emp.id) {
+      <div class="table-wrap" role="region" aria-label="Employee results" tabindex="0">
+        <table>
+          <thead>
             <tr>
-              <td>{{ emp.employeeIdentifier }}</td>
-              <td>{{ emp.fullName }}</td>
-              <td>{{ emp.department }}</td>
-              <td>{{ emp.country }}</td>
-              <td>{{ emp.currentSalary | number:'1.2-2' }}</td>
-              <td>{{ emp.currency }}</td>
-              <td><a [routerLink]="['/employees', emp.id]">View</a></td>
+              <th>ID</th><th>Name</th><th>Department</th><th>Country</th>
+              <th>Salary</th><th>Currency</th><th></th>
             </tr>
-          }
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            @for (emp of employees(); track emp.id) {
+              <tr>
+                <td>{{ emp.employeeIdentifier }}</td>
+                <td>{{ emp.fullName }}</td>
+                <td>{{ emp.department }}</td>
+                <td>{{ emp.country }}</td>
+                <td>{{ emp.currentSalary | number:'1.2-2' }}</td>
+                <td>{{ emp.currency }}</td>
+                <td><a [routerLink]="['/employees', emp.id]">View</a></td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
       <div class="pagination">
         <button type="button" [disabled]="page() === 0" (click)="prevPage()">Previous</button>
         <span>Page {{ page() + 1 }} of {{ totalPages() }}</span>
@@ -63,15 +65,24 @@ import { Employee } from '../../core/models/employee.model';
     </section>
   `,
   styles: [`
-    .toolbar { display: flex; justify-content: space-between; align-items: center; }
+    .toolbar { display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+    .toolbar h2 { margin: 0; }
     .filters { display: flex; gap: 0.5rem; margin: 1rem 0; flex-wrap: wrap; }
-    .filters input, .filters select { padding: 0.5rem; min-width: 10rem; }
-    .filters button { padding: 0.5rem 1rem; cursor: pointer; }
-    table { width: 100%; border-collapse: collapse; }
-    th, td { border-bottom: 1px solid #eee; padding: 0.5rem; text-align: left; }
-    .pagination { margin-top: 1rem; display: flex; gap: 1rem; align-items: center; }
-    .btn { padding: 0.5rem 1rem; background: #1976d2; color: white; text-decoration: none; border-radius: 4px; }
+    .filters input, .filters select, .filters button {
+      padding: 0.5rem; min-height: 2.5rem; box-sizing: border-box;
+    }
+    .filters input, .filters select { min-width: 10rem; flex: 1 1 10rem; }
+    .filters button { cursor: pointer; }
+    .table-wrap { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; border: 1px solid #eee; border-radius: 4px; }
+    table { width: 100%; border-collapse: collapse; min-width: 640px; }
+    th, td { border-bottom: 1px solid #eee; padding: 0.5rem; text-align: left; white-space: nowrap; }
+    .pagination { margin-top: 1rem; display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; }
+    .btn { padding: 0.5rem 1rem; background: #1976d2; color: white; text-decoration: none; border-radius: 4px; display: inline-block; }
     .error { color: #c62828; }
+    @media (max-width: 640px) {
+      .filters input, .filters select, .filters button { flex: 1 1 100%; min-width: 0; width: 100%; }
+      .pagination { justify-content: space-between; }
+    }
   `]
 })
 export class EmployeeDirectoryComponent implements OnInit {
@@ -126,6 +137,18 @@ export class EmployeeDirectoryComponent implements OnInit {
     });
   }
 
-  prevPage(): void { this.page.update(p => p - 1); this.load(); }
-  nextPage(): void { this.page.update(p => p + 1); this.load(); }
+  prevPage(): void {
+    if (this.page() === 0) {
+      return;
+    }
+    this.page.update(p => p - 1);
+    this.load();
+  }
+  nextPage(): void {
+    if (this.page() + 1 >= this.totalPages()) {
+      return;
+    }
+    this.page.update(p => p + 1);
+    this.load();
+  }
 }

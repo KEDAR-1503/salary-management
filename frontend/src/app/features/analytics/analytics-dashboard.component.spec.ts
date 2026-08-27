@@ -44,4 +44,15 @@ describe('AnalyticsDashboardComponent', () => {
     expect(text).toContain('United States (USD)');
     expect(text).toContain('never combined across currencies');
   });
+
+  it('should render no metric cards when analytics APIs return empty lists', () => {
+    analyticsService.getDepartmentSummaries.and.returnValue(of([]));
+    analyticsService.getCountrySummaries.and.returnValue(of([]));
+    fixture = TestBed.createComponent(AnalyticsDashboardComponent);
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.departments()).toEqual([]);
+    expect(fixture.componentInstance.countries()).toEqual([]);
+    expect(fixture.nativeElement.querySelectorAll('.card').length).toBe(0);
+  });
 });

@@ -27,12 +27,17 @@ import { toSignal } from '@angular/core/rxjs-interop';
     <main [class.main]="showNav()"><router-outlet /></main>
   `,
   styles: [`
-    .nav { display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1.5rem; background: #1976d2; color: white; }
+    .nav { display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; padding: 0.75rem 1.5rem; background: #1976d2; color: white; flex-wrap: wrap; }
     .brand { color: white; text-decoration: none; font-weight: bold; font-size: 1.1rem; }
-    .links { display: flex; gap: 1rem; align-items: center; }
+    .links { display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; }
     .links a { color: white; text-decoration: none; }
-    .links button { background: transparent; border: 1px solid white; color: white; padding: 0.25rem 0.75rem; border-radius: 4px; cursor: pointer; }
-    .main { padding: 1.5rem; max-width: 1200px; margin: 0 auto; }
+    .links button { background: transparent; border: 1px solid white; color: white; padding: 0.35rem 0.75rem; border-radius: 4px; cursor: pointer; }
+    .main { padding: 1.5rem; max-width: 1200px; margin: 0 auto; box-sizing: border-box; width: 100%; }
+    @media (max-width: 640px) {
+      .nav { padding: 0.75rem 1rem; }
+      .main { padding: 1rem; }
+      .links { width: 100%; justify-content: flex-start; }
+    }
   `]
 })
 export class AppComponent {
