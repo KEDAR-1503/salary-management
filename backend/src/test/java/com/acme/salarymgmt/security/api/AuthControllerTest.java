@@ -17,9 +17,12 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.util.List;
+
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -73,5 +76,31 @@ class AuthControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new LoginRequest("", "admin123"))))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("GET /api/auth/me - should return current username (positive)")
+    void shouldReturnCurrentUser() throws Exception {
+        Authentication authentication = new UsernamePasswordAuthenticationToken(
+                "hr_manager", "n/a", List.of()
+        );
+
+        mockMvc.perform(get("/api/auth/me").principal(authentication))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.username").value("hr_manager"));
+    }
+
+    @Test
+    @DisplayName("GET /api/auth/me - should return 401 when unauthenticated (negative)")
+    void shouldRejectUnauthenticatedMe() throws Exception {
+        mockMvc.perform(get("/api/auth/me"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @DisplayName("POST /api/auth/logout - should clear session and return 204 (positive)")
+    void shouldLogoutSuccessfully() throws Exception {
+        mockMvc.perform(post("/api/auth/logout").with(csrf()))
+                .andExpect(status().isNoContent());
     }
 }
