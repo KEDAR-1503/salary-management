@@ -66,4 +66,20 @@ class AnalyticsServiceTest {
         assertThat(result.get(0).country()).isEqualTo("United States");
         assertThat(result.get(0).medianSalary()).isEqualByComparingTo(new BigDecimal("110000.00"));
     }
+
+    @Test
+    @DisplayName("Should return an empty department list when repository has no rows (negative/empty)")
+    void shouldReturnEmptyDepartmentSummaries() {
+        when(analyticsRepository.getDepartmentSummaries()).thenReturn(List.of());
+
+        assertThat(analyticsService.getDepartmentSummaries()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("Should return an empty country list when repository has no rows (negative/empty)")
+    void shouldReturnEmptyCountrySummaries() {
+        when(analyticsRepository.getCountrySummaries()).thenReturn(List.of());
+
+        assertThat(analyticsService.getCountrySummaries()).isEmpty();
+    }
 }
