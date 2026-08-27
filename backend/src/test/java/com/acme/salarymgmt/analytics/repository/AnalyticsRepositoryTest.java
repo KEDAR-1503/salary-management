@@ -60,4 +60,38 @@ class AnalyticsRepositoryTest extends AbstractIntegrationTest {
         assertThat(engineeringUsd.getAverageSalary()).isEqualByComparingTo(new BigDecimal("110000.00"));
         assertThat(engineeringUsd.getMedianSalary()).isEqualByComparingTo(new BigDecimal("110000.00"));
     }
+
+    @Test
+    @DisplayName("Should compute country summaries grouped by country and currency (positive)")
+    void shouldComputeMedianByCountryAndCurrency() {
+        List<CountryCompensationSummaryProjection> summaries = analyticsRepository.getCountrySummaries();
+
+        assertThat(summaries).hasSize(2);
+
+        CountryCompensationSummaryProjection us = summaries.stream()
+                .filter(s -> "United States".equals(s.getCountry()) && "USD".equals(s.getCurrency()))
+                .findFirst()
+                .orElseThrow();
+
+        assertThat(us.getHeadcount()).isEqualTo(2L);
+        assertThat(us.getAverageSalary()).isEqualByComparingTo(new BigDecimal("110000.00"));
+        assertThat(us.getMedianSalary()).isEqualByComparingTo(new BigDecimal("110000.00"));
+
+        CountryCompensationSummaryProjection uk = summaries.stream()
+                .filter(s -> "United Kingdom".equals(s.getCountry()) && "GBP".equals(s.getCurrency()))
+                .findFirst()
+                .orElseThrow();
+
+        assertThat(uk.getHeadcount()).isEqualTo(1L);
+        assertThat(uk.getMedianSalary()).isEqualByComparingTo(new BigDecimal("80000.00"));
+    }
+
+    @Test
+    @DisplayName("Should return no analytics rows when employee table is empty (negative/empty)")
+    void shouldReturnEmptySummariesWhenNoEmployees() {
+        employeeRepository.deleteAll();
+
+        assertThat(analyticsRepository.getDepartmentSummaries()).isEmpty();
+        assertThat(analyticsRepository.getCountrySummaries()).isEmpty();
+    }
 }
