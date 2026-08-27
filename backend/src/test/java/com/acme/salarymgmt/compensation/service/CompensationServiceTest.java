@@ -340,6 +340,39 @@ class CompensationServiceTest {
     }
 
     @Test
+    @DisplayName("Should return employee by id (positive)")
+    void shouldGetEmployeeById() {
+        Employee emp = Employee.create(
+                "EMP-1001",
+                "Alice Smith",
+                "alice.smith@acme.corp",
+                "Engineering",
+                "Staff Level 3",
+                "United States",
+                USD,
+                new BigDecimal("120000.00"),
+                LocalDate.now(FIXED_CLOCK),
+                LocalDate.now(FIXED_CLOCK)
+        );
+        ReflectionTestUtils.setField(emp, "id", 1L);
+        when(employeeRepository.findById(1L)).thenReturn(Optional.of(emp));
+
+        Employee found = compensationService.getEmployee(1L);
+
+        assertThat(found.getEmployeeIdentifier()).isEqualTo("EMP-1001");
+    }
+
+    @Test
+    @DisplayName("Should throw EntityNotFoundException when loading missing employee (negative)")
+    void shouldThrowWhenGettingMissingEmployee() {
+        when(employeeRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> compensationService.getEmployee(99L))
+                .isInstanceOf(EntityNotFoundException.class)
+                .hasMessageContaining("99");
+    }
+
+    @Test
     @DisplayName("Should delegate filtered employee listing to repository")
     void shouldListEmployeesWithFilters() {
         Employee emp = Employee.create(
