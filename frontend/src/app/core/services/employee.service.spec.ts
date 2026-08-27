@@ -54,6 +54,63 @@ describe('EmployeeService', () => {
     req.flush(mockOptions);
   });
 
+  it('should fetch a single employee by id (positive)', () => {
+    const employee: Employee = {
+      id: 1, version: 0, employeeIdentifier: 'EMP-00001', fullName: 'Alice Walker',
+      email: 'alice@acme.corp', department: 'Engineering', roleTitle: 'Architect',
+      country: 'United States', currency: 'USD', currentSalary: 150000, effectiveDate: '2026-08-25'
+    };
+
+    service.getEmployee(1).subscribe(emp => {
+      expect(emp.employeeIdentifier).toBe('EMP-00001');
+    });
+
+    const req = httpMock.expectOne('/api/v1/employees/1');
+    expect(req.request.method).toBe('GET');
+    req.flush(employee);
+  });
+
+  it('should surface missing employee detail failures (negative)', (done) => {
+    service.getEmployee(99).subscribe({
+      next: () => done.fail('expected error'),
+      error: err => {
+        expect(err.status).toBe(404);
+        done();
+      }
+    });
+
+    const req = httpMock.expectOne('/api/v1/employees/99');
+    req.flush({ title: 'Not Found' }, { status: 404, statusText: 'Not Found' });
+  });
+
+  it('should fetch salary history for an employee (positive)', () => {
+    service.getHistory(1).subscribe(logs => {
+      expect(logs.length).toBe(1);
+      expect(logs[0].reason).toBe('Initial Employee Setup');
+    });
+
+    const req = httpMock.expectOne('/api/v1/employees/1/history');
+    expect(req.request.method).toBe('GET');
+    req.flush([{
+      id: 10, employeeId: 1, previousSalary: null, newSalary: 150000,
+      currency: 'USD', changedBy: 'hr_manager', reason: 'Initial Employee Setup',
+      changedAt: '2026-08-25T10:00:00Z'
+    }]);
+  });
+
+  it('should surface history load failures (negative)', (done) => {
+    service.getHistory(99).subscribe({
+      next: () => done.fail('expected error'),
+      error: err => {
+        expect(err.status).toBe(404);
+        done();
+      }
+    });
+
+    const req = httpMock.expectOne('/api/v1/employees/99/history');
+    req.flush({ title: 'Not Found' }, { status: 404, statusText: 'Not Found' });
+  });
+
   it('should send PUT with version on salary update', () => {
     const payload: UpdateSalaryRequest = {
       version: 0,
