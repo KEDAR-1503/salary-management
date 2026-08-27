@@ -151,4 +151,122 @@ class EmployeeRepositoryTest extends AbstractIntegrationTest {
                 .contains("India", "United States")
                 .doesNotHaveDuplicates();
     }
+
+    @Test
+    @DisplayName("Search by exact full name should return that employee and not substring neighbors")
+    void shouldSearchByExactFullNameWithoutSubstringFalsePositives() {
+        employeeRepository.saveAndFlush(Employee.create(
+                "EMP-9101", "Worker 1", "worker.exact.1@acme.corp",
+                "Engineering", "Staff Level 1", "United States", USD,
+                new BigDecimal("100000.00"), LocalDate.now(), LocalDate.now()
+        ));
+        employeeRepository.saveAndFlush(Employee.create(
+                "EMP-9110", "Worker 10", "worker.exact.10@acme.corp",
+                "Engineering", "Staff Level 1", "United States", USD,
+                new BigDecimal("101000.00"), LocalDate.now(), LocalDate.now()
+        ));
+        employeeRepository.saveAndFlush(Employee.create(
+                "EMP-9111", "Worker 11", "worker.exact.11@acme.corp",
+                "Engineering", "Staff Level 1", "United States", USD,
+                new BigDecimal("102000.00"), LocalDate.now(), LocalDate.now()
+        ));
+
+        Page<Employee> page = employeeRepository.findWithFilters(
+                null, null, "Worker 1", PageRequest.of(0, 20));
+
+        assertThat(page.getContent().stream().map(Employee::getFullName))
+                .containsExactly("Worker 1");
+    }
+
+    @Test
+    @DisplayName("Search by exact full name should return every employee sharing that name")
+    void shouldReturnAllEmployeesWithTheSameExactName() {
+        employeeRepository.saveAndFlush(Employee.create(
+                "EMP-9201", "John Smith", "john.one@acme.corp",
+                "Engineering", "Staff Level 1", "United States", USD,
+                new BigDecimal("100000.00"), LocalDate.now(), LocalDate.now()
+        ));
+        employeeRepository.saveAndFlush(Employee.create(
+                "EMP-9202", "John Smith", "john.two@acme.corp",
+                "Sales", "Staff Level 2", "United States", USD,
+                new BigDecimal("110000.00"), LocalDate.now(), LocalDate.now()
+        ));
+        employeeRepository.saveAndFlush(Employee.create(
+                "EMP-9203", "Johnny Smith", "johnny@acme.corp",
+                "HR", "Staff Level 1", "United States", USD,
+                new BigDecimal("90000.00"), LocalDate.now(), LocalDate.now()
+        ));
+
+        Page<Employee> page = employeeRepository.findWithFilters(
+                null, null, "John Smith", PageRequest.of(0, 20));
+
+        assertThat(page.getContent().stream().map(Employee::getEmployeeIdentifier))
+                .containsExactlyInAnyOrder("EMP-9201", "EMP-9202")
+                .doesNotContain("EMP-9203");
+    }
+
+    @Test
+    @DisplayName("Search by employee identifier should require an exact match")
+    void shouldSearchByExactEmployeeIdentifier() {
+        employeeRepository.saveAndFlush(Employee.create(
+                "EMP-9301", "Id Match", "id.match@acme.corp",
+                "Engineering", "Staff Level 1", "United States", USD,
+                new BigDecimal("100000.00"), LocalDate.now(), LocalDate.now()
+        ));
+        employeeRepository.saveAndFlush(Employee.create(
+                "EMP-93010", "Id Neighbor", "id.neighbor@acme.corp",
+                "Engineering", "Staff Level 1", "United States", USD,
+                new BigDecimal("100000.00"), LocalDate.now(), LocalDate.now()
+        ));
+
+        Page<Employee> page = employeeRepository.findWithFilters(
+                null, null, "EMP-9301", PageRequest.of(0, 20));
+
+        assertThat(page.getContent().stream().map(Employee::getEmployeeIdentifier))
+                .containsExactly("EMP-9301");
+    }
+
+    @Test
+    @DisplayName("Search by email should require an exact match")
+    void shouldSearchByExactEmail() {
+        employeeRepository.saveAndFlush(Employee.create(
+                "EMP-9401", "Email Match", "exact.email@acme.corp",
+                "Engineering", "Staff Level 1", "United States", USD,
+                new BigDecimal("100000.00"), LocalDate.now(), LocalDate.now()
+        ));
+        employeeRepository.saveAndFlush(Employee.create(
+                "EMP-9402", "Email Other", "exact.email.other@acme.corp",
+                "Engineering", "Staff Level 1", "United States", USD,
+                new BigDecimal("100000.00"), LocalDate.now(), LocalDate.now()
+        ));
+
+        Page<Employee> page = employeeRepository.findWithFilters(
+                null, null, "exact.email@acme.corp", PageRequest.of(0, 20));
+
+        assertThat(page.getContent().stream().map(Employee::getEmail))
+                .containsExactly("exact.email@acme.corp");
+    }
+
+    @Test
+    @DisplayName("Search should be case-insensitive for name, email, and employee identifier")
+    void shouldSearchCaseInsensitively() {
+        employeeRepository.saveAndFlush(Employee.create(
+                "EMP-9501", "Casey Exact", "casey.exact@acme.corp",
+                "Engineering", "Staff Level 1", "United States", USD,
+                new BigDecimal("100000.00"), LocalDate.now(), LocalDate.now()
+        ));
+
+        assertThat(employeeRepository.findWithFilters(
+                null, null, "casey exact", PageRequest.of(0, 5)).getContent())
+                .extracting(Employee::getEmployeeIdentifier)
+                .containsExactly("EMP-9501");
+        assertThat(employeeRepository.findWithFilters(
+                null, null, "emp-9501", PageRequest.of(0, 5)).getContent())
+                .extracting(Employee::getEmployeeIdentifier)
+                .containsExactly("EMP-9501");
+        assertThat(employeeRepository.findWithFilters(
+                null, null, "CASEY.EXACT@ACME.CORP", PageRequest.of(0, 5)).getContent())
+                .extracting(Employee::getEmployeeIdentifier)
+                .containsExactly("EMP-9501");
+    }
 }
