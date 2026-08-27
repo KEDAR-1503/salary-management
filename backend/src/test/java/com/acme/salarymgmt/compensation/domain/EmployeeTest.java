@@ -99,4 +99,97 @@ class EmployeeTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("New salary must be strictly positive");
     }
+
+    @Test
+    @DisplayName("Should reject unknown department on create")
+    void shouldRejectUnknownDepartment() {
+        assertThatThrownBy(() -> Employee.create(
+                "EMP-1001",
+                "Jane Doe",
+                "jane.doe@acme.corp",
+                "Astrology",
+                "Staff Level 1",
+                "United States",
+                USD,
+                new BigDecimal("120000.00"),
+                TODAY
+        ))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Department");
+    }
+
+    @Test
+    @DisplayName("Should reject unknown country on create")
+    void shouldRejectUnknownCountry() {
+        assertThatThrownBy(() -> Employee.create(
+                "EMP-1001",
+                "Jane Doe",
+                "jane.doe@acme.corp",
+                "Engineering",
+                "Staff Level 1",
+                "Atlantis",
+                USD,
+                new BigDecimal("120000.00"),
+                TODAY
+        ))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Country");
+    }
+
+    @Test
+    @DisplayName("Should reject unknown role title on create")
+    void shouldRejectUnknownRoleTitle() {
+        assertThatThrownBy(() -> Employee.create(
+                "EMP-1001",
+                "Jane Doe",
+                "jane.doe@acme.corp",
+                "Engineering",
+                "Chief Wizard",
+                "United States",
+                USD,
+                new BigDecimal("120000.00"),
+                TODAY
+        ))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Role");
+    }
+
+    @Test
+    @DisplayName("Should reject currency that does not match the selected country")
+    void shouldRejectCurrencyMismatchForCountry() {
+        assertThatThrownBy(() -> Employee.create(
+                "EMP-1001",
+                "Jane Doe",
+                "jane.doe@acme.corp",
+                "Engineering",
+                "Staff Level 1",
+                "United States",
+                Currency.getInstance("INR"),
+                new BigDecimal("120000.00"),
+                TODAY
+        ))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Currency");
+    }
+
+    @Test
+    @DisplayName("Should accept an employee built from the organisation catalog")
+    void shouldAcceptCatalogValues() {
+        Employee employee = Employee.create(
+                "EMP-1001",
+                "Jane Doe",
+                "jane.doe@acme.corp",
+                "Engineering",
+                "Staff Level 1",
+                "United States",
+                USD,
+                new BigDecimal("120000.00"),
+                TODAY
+        );
+
+        assertThat(employee.getDepartment()).isEqualTo("Engineering");
+        assertThat(employee.getRoleTitle()).isEqualTo("Staff Level 1");
+        assertThat(employee.getCountry()).isEqualTo("United States");
+        assertThat(employee.getCurrencyCode()).isEqualTo("USD");
+    }
 }
