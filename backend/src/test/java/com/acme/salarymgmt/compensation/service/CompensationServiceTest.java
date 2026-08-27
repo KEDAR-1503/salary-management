@@ -319,6 +319,18 @@ class CompensationServiceTest {
     }
 
     @Test
+    @DisplayName("Should pass exact search term through to the repository")
+    void shouldPassSearchTermToRepository() {
+        PageRequest pageable = PageRequest.of(0, 20);
+        when(employeeRepository.findWithFilters(null, null, "exact.email@acme.corp", pageable))
+                .thenReturn(new PageImpl<>(List.of(), pageable, 0));
+
+        compensationService.getEmployees(null, null, "exact.email@acme.corp", pageable);
+
+        verify(employeeRepository).findWithFilters(null, null, "exact.email@acme.corp", pageable);
+    }
+
+    @Test
     @DisplayName("Should return distinct department and country filter options")
     void shouldReturnDistinctFilterOptions() {
         when(employeeRepository.findDistinctDepartments()).thenReturn(List.of("Engineering", "Finance"));
