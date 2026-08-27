@@ -109,6 +109,33 @@ describe('EmployeeService', () => {
     });
   });
 
+  it('should surface create validation failures to the caller (negative)', (done) => {
+    const payload = {
+      fullName: 'Bad Hire',
+      email: 'bad@acme.corp',
+      department: 'Astrology',
+      roleTitle: 'Staff Level 1',
+      country: 'United States',
+      currency: 'USD',
+      initialSalary: 90000,
+      effectiveDate: '2026-08-27'
+    };
+
+    service.createEmployee(payload).subscribe({
+      next: () => done.fail('expected error'),
+      error: err => {
+        expect(err.status).toBe(400);
+        done();
+      }
+    });
+
+    const req = httpMock.expectOne('/api/v1/employees');
+    req.flush(
+      { title: 'Bad Request', detail: 'Department must be a catalog value' },
+      { status: 400, statusText: 'Bad Request' }
+    );
+  });
+
   it('should pass exact search query param for directory lookup (positive)', () => {
     service.getEmployees({ page: 0, size: 20, search: 'Worker 1' }).subscribe();
 
