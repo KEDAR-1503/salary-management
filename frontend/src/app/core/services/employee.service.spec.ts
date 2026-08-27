@@ -81,4 +81,59 @@ describe('EmployeeService', () => {
     const req = httpMock.expectOne('/api/v1/employees/1/salary');
     req.flush({ detail: 'Conflict' }, { status: 409, statusText: 'Conflict' });
   });
+
+  it('should POST create payload without employeeIdentifier (positive)', () => {
+    const payload = {
+      fullName: 'Dana Lee',
+      email: 'dana.lee@acme.corp',
+      department: 'Product',
+      roleTitle: 'Staff Level 2',
+      country: 'Singapore',
+      currency: 'SGD',
+      initialSalary: 98000,
+      effectiveDate: '2026-08-27'
+    };
+
+    service.createEmployee(payload).subscribe(emp => {
+      expect(emp.employeeIdentifier).toBe('EMP-10001');
+    });
+
+    const req = httpMock.expectOne('/api/v1/employees');
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body.employeeIdentifier).toBeUndefined();
+    expect(req.request.body.email).toBe('dana.lee@acme.corp');
+    req.flush({
+      id: 42, version: 0, employeeIdentifier: 'EMP-10001', fullName: 'Dana Lee',
+      email: 'dana.lee@acme.corp', department: 'Product', roleTitle: 'Staff Level 2',
+      country: 'Singapore', currency: 'SGD', currentSalary: 98000, effectiveDate: '2026-08-27'
+    });
+  });
+
+  it('should pass exact search query param for directory lookup (positive)', () => {
+    service.getEmployees({ page: 0, size: 20, search: 'Worker 1' }).subscribe();
+
+    const req = httpMock.expectOne(r =>
+      r.url === '/api/v1/employees' && r.params.get('search') === 'Worker 1'
+    );
+    expect(req.request.method).toBe('GET');
+    req.flush({ content: [], totalElements: 0, totalPages: 0, size: 20, number: 0 });
+  });
+
+  it('should surface non-409 update failures to the caller (negative)', (done) => {
+    service.updateSalary(1, {
+      version: 0,
+      newSalary: 160000,
+      effectiveDate: '2026-08-27',
+      reason: 'Annual merit performance promotion'
+    }).subscribe({
+      next: () => done.fail('expected error'),
+      error: err => {
+        expect(err.status).toBe(500);
+        done();
+      }
+    });
+
+    const req = httpMock.expectOne('/api/v1/employees/1/salary');
+    req.flush({ detail: 'boom' }, { status: 500, statusText: 'Server Error' });
+  });
 });
