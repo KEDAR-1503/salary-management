@@ -498,4 +498,32 @@ class CompensationControllerTest {
                 .andExpect(jsonPath("$.roleTitles[0]").value("Staff Level 1"))
                 .andExpect(jsonPath("$.roleTitles[4]").value("Staff Level 5"));
     }
+
+    @Test
+    @DisplayName("GET /api/v1/employees/filter-options - should reject unauthenticated access (negative)")
+    void shouldRejectUnauthenticatedFilterOptions() throws Exception {
+        mockMvc.perform(get("/api/v1/employees/filter-options"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/employees - should reject unauthenticated create (negative)")
+    void shouldRejectUnauthenticatedCreate() throws Exception {
+        CreateEmployeeRequest request = new CreateEmployeeRequest(
+                "Dana Lee",
+                "dana.lee@acme.corp",
+                "Product",
+                "Staff Level 2",
+                "Singapore",
+                "SGD",
+                new BigDecimal("98000.00"),
+                LocalDate.now()
+        );
+
+        mockMvc.perform(post("/api/v1/employees")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isUnauthorized());
+    }
 }
