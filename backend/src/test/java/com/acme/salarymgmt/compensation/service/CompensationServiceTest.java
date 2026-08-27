@@ -294,6 +294,52 @@ class CompensationServiceTest {
     }
 
     @Test
+    @DisplayName("Should reject create when effective date is in the past (negative)")
+    void shouldRejectCreateWithPastEffectiveDate() {
+        LocalDate today = LocalDate.now(FIXED_CLOCK);
+
+        assertThatThrownBy(() -> compensationService.createEmployee(
+                "Past Hire",
+                "past.hire@acme.corp",
+                "Engineering",
+                "Staff Level 1",
+                "United States",
+                USD,
+                new BigDecimal("90000.00"),
+                today.minusDays(1)
+        ))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("past");
+    }
+
+    @Test
+    @DisplayName("Should accept create when effective date is in the future (positive)")
+    void shouldAcceptCreateWithFutureEffectiveDate() {
+        LocalDate today = LocalDate.now(FIXED_CLOCK);
+        LocalDate future = today.plusDays(10);
+        when(employeeRepository.findMaxEmployeeNumber()).thenReturn(50L);
+        when(employeeRepository.save(any(Employee.class))).thenAnswer(invocation -> {
+            Employee saved = invocation.getArgument(0);
+            ReflectionTestUtils.setField(saved, "id", 51L);
+            return saved;
+        });
+
+        Employee created = compensationService.createEmployee(
+                "Future Hire",
+                "future.hire@acme.corp",
+                "Engineering",
+                "Staff Level 1",
+                "United States",
+                USD,
+                new BigDecimal("90000.00"),
+                future
+        );
+
+        assertThat(created.getEffectiveDate()).isEqualTo(future);
+        assertThat(created.getEmployeeIdentifier()).isEqualTo("EMP-00051");
+    }
+
+    @Test
     @DisplayName("Should delegate filtered employee listing to repository")
     void shouldListEmployeesWithFilters() {
         Employee emp = Employee.create(
