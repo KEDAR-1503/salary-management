@@ -6,6 +6,7 @@ import com.acme.salarymgmt.compensation.domain.Employee;
 import com.acme.salarymgmt.compensation.dto.CreateEmployeeRequest;
 import com.acme.salarymgmt.compensation.dto.UpdateSalaryRequest;
 import com.acme.salarymgmt.compensation.service.CompensationService;
+import com.acme.salarymgmt.config.GlobalExceptionHandler;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -13,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -40,6 +42,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(CompensationController.class)
 @AutoConfigureMockMvc
+@Import(GlobalExceptionHandler.class)
 class CompensationControllerTest {
 
     private static final Currency USD = Currency.getInstance("USD");
@@ -291,6 +294,91 @@ class CompensationControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser(username = "hr_manager", roles = {"HR_MANAGER"})
+    @DisplayName("POST /api/v1/employees - should reject unknown department catalog value (negative)")
+    void shouldRejectCreateWithUnknownDepartment() throws Exception {
+        when(compensationService.createEmployee(
+                any(), any(), eq("Astrology"), any(), any(), any(), any(), any()
+        )).thenThrow(new IllegalArgumentException("Department must be a catalog value"));
+
+        CreateEmployeeRequest request = new CreateEmployeeRequest(
+                "Bad Dept",
+                "bad.dept@acme.corp",
+                "Astrology",
+                "Staff Level 1",
+                "United States",
+                "USD",
+                new BigDecimal("90000.00"),
+                LocalDate.now()
+        );
+
+        mockMvc.perform(post("/api/v1/employees")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.title").value("Bad Request"))
+                .andExpect(jsonPath("$.detail").value("Department must be a catalog value"));
+    }
+
+    @Test
+    @WithMockUser(username = "hr_manager", roles = {"HR_MANAGER"})
+    @DisplayName("POST /api/v1/employees - should reject currency that does not match country (negative)")
+    void shouldRejectCreateWithCurrencyMismatch() throws Exception {
+        when(compensationService.createEmployee(
+                any(), any(), any(), any(), eq("Singapore"), eq(Currency.getInstance("USD")), any(), any()
+        )).thenThrow(new IllegalArgumentException("Currency does not match country"));
+
+        CreateEmployeeRequest request = new CreateEmployeeRequest(
+                "Mismatch Hire",
+                "mismatch@acme.corp",
+                "Product",
+                "Staff Level 2",
+                "Singapore",
+                "USD",
+                new BigDecimal("98000.00"),
+                LocalDate.now()
+        );
+
+        mockMvc.perform(post("/api/v1/employees")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.title").value("Bad Request"))
+                .andExpect(jsonPath("$.detail").value("Currency does not match country"));
+    }
+
+    @Test
+    @WithMockUser(username = "hr_manager", roles = {"HR_MANAGER"})
+    @DisplayName("POST /api/v1/employees - should reject past effective date (negative)")
+    void shouldRejectCreateWithPastEffectiveDate() throws Exception {
+        LocalDate past = LocalDate.now().minusDays(1);
+        when(compensationService.createEmployee(
+                any(), any(), any(), any(), any(), any(), any(), eq(past)
+        )).thenThrow(new IllegalArgumentException("Effective date must not be in the past"));
+
+        CreateEmployeeRequest request = new CreateEmployeeRequest(
+                "Past Hire",
+                "past.hire@acme.corp",
+                "Engineering",
+                "Staff Level 1",
+                "United States",
+                "USD",
+                new BigDecimal("90000.00"),
+                past
+        );
+
+        mockMvc.perform(post("/api/v1/employees")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.title").value("Bad Request"))
+                .andExpect(jsonPath("$.detail").value("Effective date must not be in the past"));
     }
 
     @Test
