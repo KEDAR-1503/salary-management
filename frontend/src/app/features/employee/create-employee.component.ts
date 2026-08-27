@@ -21,7 +21,6 @@ const CURRENCY_BY_COUNTRY: Record<string, string> = {
     <section>
       <h2>Create Employee</h2>
       <form [formGroup]="form" (ngSubmit)="onSubmit()">
-        <label>Employee ID<input formControlName="employeeIdentifier" /></label>
         <label>Full Name<input formControlName="fullName" /></label>
         <label>Email<input type="email" formControlName="email" /></label>
         <label>Department
@@ -55,8 +54,12 @@ const CURRENCY_BY_COUNTRY: Record<string, string> = {
             }
           </select>
         </label>
-        <label>Initial Salary<input type="number" formControlName="initialSalary" /></label>
-        <label>Effective Date<input type="date" formControlName="effectiveDate" /></label>
+        <label>Initial Salary (in {{ form.controls.currency.value }})
+          <input type="number" formControlName="initialSalary" />
+        </label>
+        <label>Effective Date
+          <input type="date" formControlName="effectiveDate" />
+        </label>
         @if (error()) { <p class="error">{{ error() }}</p> }
         <div class="actions">
           <button type="submit" [disabled]="form.invalid || saving()">Create</button>
@@ -69,6 +72,7 @@ const CURRENCY_BY_COUNTRY: Record<string, string> = {
     form { max-width: 480px; display: flex; flex-direction: column; gap: 0.75rem; }
     label { display: flex; flex-direction: column; }
     input, select { padding: 0.5rem; margin-top: 0.25rem; }
+    input:disabled, select:disabled { background: #f5f5f5; color: #555; }
     .actions { display: flex; gap: 1rem; align-items: center; margin-top: 1rem; }
     button { padding: 0.5rem 1rem; background: #1976d2; color: white; border: none; border-radius: 4px; }
     button:disabled { opacity: 0.6; }
@@ -86,9 +90,9 @@ export class CreateEmployeeComponent implements OnInit {
   readonly countries = signal<string[]>([]);
   readonly roleTitles = signal<string[]>([]);
   readonly currencies = Object.values(CURRENCY_BY_COUNTRY);
+  readonly today = new Date().toISOString().slice(0, 10);
 
   readonly form = this.fb.nonNullable.group({
-    employeeIdentifier: ['', Validators.required],
     fullName: ['', Validators.required],
     email: ['', [Validators.required, Validators.email]],
     department: ['', Validators.required],
@@ -96,7 +100,7 @@ export class CreateEmployeeComponent implements OnInit {
     country: ['', Validators.required],
     currency: [{ value: 'USD', disabled: true }, [Validators.required, Validators.minLength(3), Validators.maxLength(3)]],
     initialSalary: [0, [Validators.required, Validators.min(0.01)]],
-    effectiveDate: [new Date().toISOString().slice(0, 10), Validators.required]
+    effectiveDate: [{ value: this.today, disabled: true }, Validators.required]
   });
 
   ngOnInit(): void {
@@ -121,7 +125,16 @@ export class CreateEmployeeComponent implements OnInit {
     if (this.form.invalid) return;
     this.saving.set(true);
     this.error.set(null);
-    this.employeeService.createEmployee(this.form.getRawValue()).subscribe({
+    const raw = this.form.getRawValue();
+    this.employeeService.createEmployee({
+      fullName: raw.fullName,
+      email: raw.email,
+      department: raw.department,
+      roleTitle: raw.roleTitle,
+      country: raw.country,
+      currency: raw.currency,
+      initialSalary: raw.initialSalary
+    }).subscribe({
       next: emp => this.router.navigate(['/employees', emp.id]),
       error: () => {
         this.error.set('Failed to create employee.');

@@ -39,15 +39,13 @@ public class CompensationController {
     @PostMapping
     public ResponseEntity<EmployeeResponse> createEmployee(@Valid @RequestBody CreateEmployeeRequest request) {
         Employee employee = compensationService.createEmployee(
-                request.employeeIdentifier(),
                 request.fullName(),
                 request.email(),
                 request.department(),
                 request.roleTitle(),
                 request.country(),
                 Currency.getInstance(request.currency()),
-                request.initialSalary(),
-                request.effectiveDate()
+                request.initialSalary()
         );
         return ResponseEntity.status(HttpStatus.CREATED).body(EmployeeResponse.fromDomain(employee));
     }

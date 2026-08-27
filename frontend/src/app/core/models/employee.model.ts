@@ -53,7 +53,6 @@ export interface SalaryAuditLog {
 }
 
 export interface CreateEmployeeRequest {
-  employeeIdentifier: string;
   fullName: string;
   email: string;
   department: string;
@@ -61,5 +60,4 @@ export interface CreateEmployeeRequest {
   country: string;
   currency: string;
   initialSalary: number;
-  effectiveDate: string;
 }

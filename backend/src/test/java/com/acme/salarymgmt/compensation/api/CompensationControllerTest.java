@@ -192,22 +192,20 @@ class CompensationControllerTest {
 
     @Test
     @WithMockUser(username = "hr_manager", roles = {"HR_MANAGER"})
-    @DisplayName("POST /api/v1/employees - should create employee and return 201")
+    @DisplayName("POST /api/v1/employees - should create employee without client-supplied EMP ID")
     void shouldCreateEmployee() throws Exception {
         CreateEmployeeRequest request = new CreateEmployeeRequest(
-                "EMP-2001",
                 "Dana Lee",
                 "dana.lee@acme.corp",
                 "Product",
                 "Staff Level 2",
                 "Singapore",
                 "SGD",
-                new BigDecimal("98000.00"),
-                LocalDate.now()
+                new BigDecimal("98000.00")
         );
 
         Employee created = Employee.create(
-                request.employeeIdentifier(),
+                "EMP-02001",
                 request.fullName(),
                 request.email(),
                 request.department(),
@@ -215,19 +213,17 @@ class CompensationControllerTest {
                 request.country(),
                 Currency.getInstance("SGD"),
                 request.initialSalary(),
-                request.effectiveDate()
+                LocalDate.now()
         );
         org.springframework.test.util.ReflectionTestUtils.setField(created, "id", 42L);
 
         when(compensationService.createEmployee(
-                eq("EMP-2001"),
                 eq("Dana Lee"),
                 eq("dana.lee@acme.corp"),
                 eq("Product"),
                 eq("Staff Level 2"),
                 eq("Singapore"),
                 eq(Currency.getInstance("SGD")),
-                any(),
                 any()
         )).thenReturn(created);
 
@@ -237,8 +233,31 @@ class CompensationControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(42))
-                .andExpect(jsonPath("$.employeeIdentifier").value("EMP-2001"))
+                .andExpect(jsonPath("$.employeeIdentifier").value("EMP-02001"))
                 .andExpect(jsonPath("$.currency").value("SGD"));
+    }
+
+    @Test
+    @WithMockUser(username = "hr_manager", roles = {"HR_MANAGER"})
+    @DisplayName("POST /api/v1/employees - should reject blank name (negative)")
+    void shouldRejectCreateWithBlankName() throws Exception {
+        String body = """
+                {
+                  "fullName": "",
+                  "email": "dana.lee@acme.corp",
+                  "department": "Product",
+                  "roleTitle": "Staff Level 2",
+                  "country": "Singapore",
+                  "currency": "SGD",
+                  "initialSalary": 98000.00
+                }
+                """;
+
+        mockMvc.perform(post("/api/v1/employees")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isBadRequest());
     }
 
     @Test

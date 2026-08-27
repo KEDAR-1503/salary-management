@@ -26,8 +26,12 @@ import { Employee, SalaryAuditLog } from '../../core/models/employee.model';
 
         <h3>Change Salary</h3>
         <form [formGroup]="salaryForm" (ngSubmit)="onSalarySubmit()">
-          <label>New Salary<input type="number" formControlName="newSalary" /></label>
-          <label>Effective Date<input type="date" formControlName="effectiveDate" /></label>
+          <label>New Salary (in {{ emp.currency }})
+            <input type="number" formControlName="newSalary" />
+          </label>
+          <label>Effective Date
+            <input type="date" formControlName="effectiveDate" />
+          </label>
           <label>Reason (min 10 chars)<textarea formControlName="reason" rows="3"></textarea></label>
           @if (conflict()) { <p class="conflict" role="alert">{{ conflict() }} <button type="button" (click)="reload()">Reload</button></p> }
           @if (salaryError()) { <p class="error">{{ salaryError() }}</p> }
@@ -59,6 +63,7 @@ import { Employee, SalaryAuditLog } from '../../core/models/employee.model';
     form { max-width: 480px; display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 2rem; }
     label { display: flex; flex-direction: column; }
     input, textarea { padding: 0.5rem; margin-top: 0.25rem; }
+    input:disabled { background: #f5f5f5; color: #555; }
     table { width: 100%; border-collapse: collapse; }
     th, td { border-bottom: 1px solid #eee; padding: 0.5rem; text-align: left; }
     .conflict { background: #fff3e0; padding: 0.75rem; border-radius: 4px; color: #e65100; }
@@ -77,10 +82,11 @@ export class EmployeeDetailComponent implements OnInit {
   readonly saving = signal(false);
   readonly conflict = signal<string | null>(null);
   readonly salaryError = signal<string | null>(null);
+  readonly today = new Date().toISOString().slice(0, 10);
 
   readonly salaryForm = this.fb.nonNullable.group({
     newSalary: [0, [Validators.required, Validators.min(0.01)]],
-    effectiveDate: [new Date().toISOString().slice(0, 10), Validators.required],
+    effectiveDate: [{ value: this.today, disabled: true }, Validators.required],
     reason: ['', [Validators.required, Validators.minLength(10)]]
   });
 
@@ -97,7 +103,10 @@ export class EmployeeDetailComponent implements OnInit {
     this.employeeService.getEmployee(this.employeeId).subscribe({
       next: emp => {
         this.employee.set(emp);
-        this.salaryForm.patchValue({ newSalary: emp.currentSalary, effectiveDate: emp.effectiveDate });
+        this.salaryForm.patchValue({
+          newSalary: emp.currentSalary,
+          effectiveDate: this.today
+        });
         this.loading.set(false);
       },
       error: () => this.loading.set(false)
@@ -113,11 +122,11 @@ export class EmployeeDetailComponent implements OnInit {
     this.saving.set(true);
     this.conflict.set(null);
     this.salaryError.set(null);
-    const { newSalary, effectiveDate, reason } = this.salaryForm.getRawValue();
+    const { newSalary, reason } = this.salaryForm.getRawValue();
     this.employeeService.updateSalary(this.employeeId, {
       version: emp.version,
       newSalary,
-      effectiveDate,
+      effectiveDate: this.today,
       reason
     }).subscribe({
       next: updated => {

@@ -19,6 +19,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Currency;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -30,16 +31,17 @@ public class CompensationService {
 
     @Transactional
     public Employee createEmployee(
-            String employeeIdentifier,
             String fullName,
             String email,
             String department,
             String roleTitle,
             String country,
             Currency currency,
-            BigDecimal initialSalary,
-            LocalDate effectiveDate
+            BigDecimal initialSalary
     ) {
+        LocalDate today = LocalDate.now(clock);
+        String employeeIdentifier = nextEmployeeIdentifier();
+
         Employee employee = Employee.create(
                 employeeIdentifier,
                 fullName,
@@ -49,7 +51,7 @@ public class CompensationService {
                 country,
                 currency,
                 initialSalary,
-                effectiveDate
+                today
         );
 
         Employee saved = employeeRepository.save(employee);
@@ -72,7 +74,7 @@ public class CompensationService {
             Long employeeId,
             Long expectedVersion,
             BigDecimal newSalary,
-            LocalDate effectiveDate,
+            LocalDate ignoredEffectiveDate,
             String reason
     ) {
         if (reason == null || reason.trim().length() < 10) {
@@ -89,7 +91,7 @@ public class CompensationService {
         }
 
         LocalDate today = LocalDate.now(clock);
-        BigDecimal previousSalary = employee.updateSalary(newSalary, effectiveDate, today);
+        BigDecimal previousSalary = employee.updateSalary(newSalary, today, today);
         Employee saved = employeeRepository.save(employee);
 
         String actor = resolveAuthenticatedActor();
@@ -127,6 +129,11 @@ public class CompensationService {
     @Transactional(readOnly = true)
     public List<String> getDistinctCountries() {
         return employeeRepository.findDistinctCountries();
+    }
+
+    private String nextEmployeeIdentifier() {
+        long max = Optional.ofNullable(employeeRepository.findMaxEmployeeNumber()).orElse(0L);
+        return String.format("EMP-%05d", max + 1);
     }
 
     private String resolveAuthenticatedActor() {

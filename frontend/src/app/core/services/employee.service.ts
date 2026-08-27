@@ -34,7 +34,15 @@ export class EmployeeService {
     return this.http.get<Employee>(`${this.baseUrl}/${id}`);
   }
 
-  createEmployee(request: Partial<Employee> & { initialSalary: number; effectiveDate: string }): Observable<Employee> {
+  createEmployee(request: {
+    fullName: string;
+    email: string;
+    department: string;
+    roleTitle: string;
+    country: string;
+    currency: string;
+    initialSalary: number;
+  }): Observable<Employee> {
     return this.http.post<Employee>(this.baseUrl, request);
   }
 

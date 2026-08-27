@@ -163,7 +163,7 @@ class CompensationServiceTest {
     @Test
     @DisplayName("Should create employee and record initial setup audit")
     void shouldCreateEmployeeAndRecordInitialAudit() {
-        LocalDate effectiveDate = LocalDate.now(FIXED_CLOCK);
+        when(employeeRepository.findMaxEmployeeNumber()).thenReturn(2000L);
         when(employeeRepository.save(any(Employee.class))).thenAnswer(invocation -> {
             Employee saved = invocation.getArgument(0);
             ReflectionTestUtils.setField(saved, "id", 42L);
@@ -171,19 +171,18 @@ class CompensationServiceTest {
         });
 
         Employee created = compensationService.createEmployee(
-                "EMP-2001",
                 "Dana Lee",
                 "dana.lee@acme.corp",
                 "Product",
                 "Staff Level 2",
                 "Singapore",
                 Currency.getInstance("SGD"),
-                new BigDecimal("98000.00"),
-                effectiveDate
+                new BigDecimal("98000.00")
         );
 
         assertThat(created.getId()).isEqualTo(42L);
-        assertThat(created.getEmployeeIdentifier()).isEqualTo("EMP-2001");
+        assertThat(created.getEmployeeIdentifier()).isEqualTo("EMP-02001");
+        assertThat(created.getEffectiveDate()).isEqualTo(LocalDate.now(FIXED_CLOCK));
         verify(auditRecorder).recordInitialSetup(
                 eq(42L),
                 eq(new BigDecimal("98000.00")),
@@ -191,6 +190,71 @@ class CompensationServiceTest {
                 eq("hr_manager"),
                 eq(FIXED_INSTANT)
         );
+    }
+
+    @Test
+    @DisplayName("Should start employee identifiers at EMP-00001 when catalog is empty")
+    void shouldStartEmployeeIdentifiersAtOneWhenEmpty() {
+        when(employeeRepository.findMaxEmployeeNumber()).thenReturn(null);
+        when(employeeRepository.save(any(Employee.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Employee created = compensationService.createEmployee(
+                "First Hire",
+                "first.hire@acme.corp",
+                "Engineering",
+                "Staff Level 1",
+                "United States",
+                USD,
+                new BigDecimal("90000.00")
+        );
+
+        assertThat(created.getEmployeeIdentifier()).isEqualTo("EMP-00001");
+    }
+
+    @Test
+    @DisplayName("Should force salary update effective date to today even when client sends another date")
+    void shouldForceUpdateEffectiveDateToToday() {
+        LocalDate today = LocalDate.now(FIXED_CLOCK);
+        Employee existingEmployee = Employee.create(
+                "EMP-1001",
+                "Alice Smith",
+                "alice.smith@acme.corp",
+                "Engineering",
+                "Staff Level 3",
+                "United States",
+                USD,
+                new BigDecimal("120000.00"),
+                today.minusDays(10)
+        );
+        when(employeeRepository.findById(101L)).thenReturn(Optional.of(existingEmployee));
+        when(employeeRepository.save(existingEmployee)).thenReturn(existingEmployee);
+
+        Employee updated = compensationService.updateSalary(
+                101L,
+                0L,
+                new BigDecimal("135000.00"),
+                today.minusDays(3),
+                "Annual merit performance promotion"
+        );
+
+        assertThat(updated.getEffectiveDate()).isEqualTo(today);
+        assertThat(updated.getCurrentSalary()).isEqualByComparingTo(new BigDecimal("135000.00"));
+    }
+
+    @Test
+    @DisplayName("Should reject create when catalog values are invalid")
+    void shouldRejectCreateWithInvalidCatalogValues() {
+        assertThatThrownBy(() -> compensationService.createEmployee(
+                "Bad Dept",
+                "bad@acme.corp",
+                "Astrology",
+                "Staff Level 1",
+                "United States",
+                USD,
+                new BigDecimal("90000.00")
+        ))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Department");
     }
 
     @Test

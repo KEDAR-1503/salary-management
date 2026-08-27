@@ -18,6 +18,13 @@ import java.util.Optional;
 @Repository
 public interface EmployeeRepository extends JpaRepository<Employee, Long>, JpaSpecificationExecutor<Employee> {
 
+    @Query(value = """
+            SELECT COALESCE(MAX(CAST(SUBSTRING(employee_identifier FROM 5) AS INTEGER)), 0)
+            FROM employees
+            WHERE employee_identifier ~ '^EMP-[0-9]+$'
+            """, nativeQuery = true)
+    Long findMaxEmployeeNumber();
+
     Optional<Employee> findByEmployeeIdentifier(String employeeIdentifier);
 
     Optional<Employee> findByEmail(String email);
