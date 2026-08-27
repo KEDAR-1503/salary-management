@@ -4,6 +4,7 @@ import java.util.List;
 
 public record EmployeeFilterOptionsResponse(
         List<String> departments,
-        List<String> countries
+        List<String> countries,
+        List<String> roleTitles
 ) {
 }

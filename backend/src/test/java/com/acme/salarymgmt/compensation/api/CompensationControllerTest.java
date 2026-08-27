@@ -70,7 +70,7 @@ class CompensationControllerTest {
                 "Alice Smith",
                 "alice.smith@acme.corp",
                 "Engineering",
-                "Staff Engineer",
+                "Staff Level 3",
                 "United States",
                 USD,
                 new BigDecimal("135000.00"),
@@ -118,7 +118,7 @@ class CompensationControllerTest {
                 "Alice Smith",
                 "alice.smith@acme.corp",
                 "Engineering",
-                "Staff Engineer",
+                "Staff Level 3",
                 "United States",
                 USD,
                 new BigDecimal("120000.00"),
@@ -141,7 +141,7 @@ class CompensationControllerTest {
                 "Alice Smith",
                 "alice.smith@acme.corp",
                 "Engineering",
-                "Staff Engineer",
+                "Staff Level 3",
                 "United States",
                 USD,
                 new BigDecimal("120000.00"),
@@ -173,7 +173,7 @@ class CompensationControllerTest {
                 "Alice Smith",
                 "alice.smith@acme.corp",
                 "Engineering",
-                "Staff Engineer",
+                "Staff Level 3",
                 "United States",
                 USD,
                 new BigDecimal("120000.00"),
@@ -199,7 +199,7 @@ class CompensationControllerTest {
                 "Dana Lee",
                 "dana.lee@acme.corp",
                 "Product",
-                "Product Manager",
+                "Staff Level 2",
                 "Singapore",
                 "SGD",
                 new BigDecimal("98000.00"),
@@ -224,7 +224,7 @@ class CompensationControllerTest {
                 eq("Dana Lee"),
                 eq("dana.lee@acme.corp"),
                 eq("Product"),
-                eq("Product Manager"),
+                eq("Staff Level 2"),
                 eq("Singapore"),
                 eq(Currency.getInstance("SGD")),
                 any(),
@@ -243,16 +243,13 @@ class CompensationControllerTest {
 
     @Test
     @WithMockUser(username = "hr_manager", roles = {"HR_MANAGER"})
-    @DisplayName("GET /api/v1/employees/filter-options - should return distinct departments and countries")
+    @DisplayName("GET /api/v1/employees/filter-options - should return organisation catalog lists")
     void shouldReturnFilterOptions() throws Exception {
-        when(compensationService.getDistinctDepartments()).thenReturn(List.of("Engineering", "Finance"));
-        when(compensationService.getDistinctCountries()).thenReturn(List.of("Germany", "India"));
-
         mockMvc.perform(get("/api/v1/employees/filter-options"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.departments[0]").value("Engineering"))
-                .andExpect(jsonPath("$.departments[1]").value("Finance"))
-                .andExpect(jsonPath("$.countries[0]").value("Germany"))
-                .andExpect(jsonPath("$.countries[1]").value("India"));
+                .andExpect(jsonPath("$.countries[0]").value("United States"))
+                .andExpect(jsonPath("$.roleTitles[0]").value("Staff Level 1"))
+                .andExpect(jsonPath("$.roleTitles[4]").value("Staff Level 5"));
     }
 }

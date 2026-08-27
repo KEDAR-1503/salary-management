@@ -135,14 +135,26 @@ public class Employee {
         if (department == null || department.isBlank()) {
             throw new IllegalArgumentException("Department must not be blank");
         }
+        if (!OrgCatalog.isAllowedDepartment(department.trim())) {
+            throw new IllegalArgumentException("Department must be a catalog value");
+        }
         if (roleTitle == null || roleTitle.isBlank()) {
             throw new IllegalArgumentException("Role title must not be blank");
+        }
+        if (!OrgCatalog.isAllowedRoleTitle(roleTitle.trim())) {
+            throw new IllegalArgumentException("Role title must be a catalog value");
         }
         if (country == null || country.isBlank()) {
             throw new IllegalArgumentException("Country must not be blank");
         }
+        if (!OrgCatalog.isAllowedCountry(country.trim())) {
+            throw new IllegalArgumentException("Country must be a catalog value");
+        }
         if (currency == null) {
             throw new IllegalArgumentException("Currency must not be null");
+        }
+        if (!OrgCatalog.isAllowedCurrencyForCountry(country.trim(), currency)) {
+            throw new IllegalArgumentException("Currency does not match country");
         }
         if (effectiveDate == null) {
             throw new IllegalArgumentException("Effective date must not be null");
