@@ -8,6 +8,7 @@ import com.acme.salarymgmt.compensation.dto.UpdateSalaryRequest;
 import com.acme.salarymgmt.compensation.service.CompensationService;
 import com.acme.salarymgmt.config.GlobalExceptionHandler;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -113,6 +114,72 @@ class CompensationControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.title").value("Conflict"));
+    }
+
+    @Test
+    @WithMockUser(username = "hr_manager", roles = {"HR_MANAGER"})
+    @DisplayName("PUT /api/v1/employees/{id}/salary - should reject reason shorter than 10 chars (negative)")
+    void shouldRejectSalaryUpdateWithShortReason() throws Exception {
+        UpdateSalaryRequest request = new UpdateSalaryRequest(
+                0L,
+                new BigDecimal("135000.00"),
+                LocalDate.now(),
+                "too short"
+        );
+
+        mockMvc.perform(put("/api/v1/employees/1/salary")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.title").value("Validation Error"));
+    }
+
+    @Test
+    @WithMockUser(username = "hr_manager", roles = {"HR_MANAGER"})
+    @DisplayName("PUT /api/v1/employees/{id}/salary - should reject past effective date (negative)")
+    void shouldRejectSalaryUpdateWithPastEffectiveDate() throws Exception {
+        LocalDate past = LocalDate.now().minusDays(1);
+        when(compensationService.updateSalary(eq(1L), eq(0L), any(), eq(past), any()))
+                .thenThrow(new IllegalArgumentException("Effective date must not be in the past"));
+
+        UpdateSalaryRequest request = new UpdateSalaryRequest(
+                0L,
+                new BigDecimal("135000.00"),
+                past,
+                "Annual merit performance promotion"
+        );
+
+        mockMvc.perform(put("/api/v1/employees/1/salary")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.title").value("Bad Request"))
+                .andExpect(jsonPath("$.detail").value("Effective date must not be in the past"));
+    }
+
+    @Test
+    @WithMockUser(username = "hr_manager", roles = {"HR_MANAGER"})
+    @DisplayName("PUT /api/v1/employees/{id}/salary - should return 404 when employee missing (negative)")
+    void shouldReturn404WhenUpdatingMissingEmployee() throws Exception {
+        when(compensationService.updateSalary(eq(99L), eq(0L), any(), any(), any()))
+                .thenThrow(new EntityNotFoundException("Employee not found with id: 99"));
+
+        UpdateSalaryRequest request = new UpdateSalaryRequest(
+                0L,
+                new BigDecimal("135000.00"),
+                LocalDate.now(),
+                "Annual merit performance promotion"
+        );
+
+        mockMvc.perform(put("/api/v1/employees/99/salary")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.title").value("Not Found"))
+                .andExpect(jsonPath("$.detail").value("Employee not found with id: 99"));
     }
 
     @Test
