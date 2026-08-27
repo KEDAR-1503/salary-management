@@ -36,6 +36,7 @@ class EmployeeRepositoryTest extends AbstractIntegrationTest {
                 "United States",
                 USD,
                 new BigDecimal("150000.00"),
+                LocalDate.now(),
                 LocalDate.now()
         );
 
@@ -61,6 +62,7 @@ class EmployeeRepositoryTest extends AbstractIntegrationTest {
                 "United States",
                 USD,
                 new BigDecimal("130000.00"),
+                LocalDate.now(),
                 LocalDate.now()
         );
 
@@ -91,6 +93,7 @@ class EmployeeRepositoryTest extends AbstractIntegrationTest {
                 "United States",
                 USD,
                 new BigDecimal("90000.00"),
+                LocalDate.now(),
                 LocalDate.now()
         ));
 
@@ -113,6 +116,7 @@ class EmployeeRepositoryTest extends AbstractIntegrationTest {
                 "India",
                 Currency.getInstance("INR"),
                 new BigDecimal("80000.00"),
+                LocalDate.now(),
                 LocalDate.now()
         ));
         employeeRepository.saveAndFlush(Employee.create(
@@ -124,6 +128,7 @@ class EmployeeRepositoryTest extends AbstractIntegrationTest {
                 "United States",
                 USD,
                 new BigDecimal("90000.00"),
+                LocalDate.now(),
                 LocalDate.now()
         ));
         employeeRepository.saveAndFlush(Employee.create(
@@ -135,6 +140,7 @@ class EmployeeRepositoryTest extends AbstractIntegrationTest {
                 "India",
                 Currency.getInstance("INR"),
                 new BigDecimal("85000.00"),
+                LocalDate.now(),
                 LocalDate.now()
         ));
 

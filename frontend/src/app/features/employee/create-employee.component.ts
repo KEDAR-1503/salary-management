@@ -58,7 +58,7 @@ const CURRENCY_BY_COUNTRY: Record<string, string> = {
           <input type="number" formControlName="initialSalary" />
         </label>
         <label>Effective Date
-          <input type="date" formControlName="effectiveDate" />
+          <input type="date" formControlName="effectiveDate" [attr.min]="today" />
         </label>
         @if (error()) { <p class="error">{{ error() }}</p> }
         <div class="actions">
@@ -72,7 +72,7 @@ const CURRENCY_BY_COUNTRY: Record<string, string> = {
     form { max-width: 480px; display: flex; flex-direction: column; gap: 0.75rem; }
     label { display: flex; flex-direction: column; }
     input, select { padding: 0.5rem; margin-top: 0.25rem; }
-    input:disabled, select:disabled { background: #f5f5f5; color: #555; }
+    select:disabled { background: #f5f5f5; color: #555; }
     .actions { display: flex; gap: 1rem; align-items: center; margin-top: 1rem; }
     button { padding: 0.5rem 1rem; background: #1976d2; color: white; border: none; border-radius: 4px; }
     button:disabled { opacity: 0.6; }
@@ -92,6 +92,11 @@ export class CreateEmployeeComponent implements OnInit {
   readonly currencies = Object.values(CURRENCY_BY_COUNTRY);
   readonly today = new Date().toISOString().slice(0, 10);
 
+  private readonly notPastDateValidator = (control: { value: string }) => {
+    if (!control.value) return null;
+    return control.value < this.today ? { pastDate: true } : null;
+  };
+
   readonly form = this.fb.nonNullable.group({
     fullName: ['', Validators.required],
     email: ['', [Validators.required, Validators.email]],
@@ -100,7 +105,7 @@ export class CreateEmployeeComponent implements OnInit {
     country: ['', Validators.required],
     currency: [{ value: 'USD', disabled: true }, [Validators.required, Validators.minLength(3), Validators.maxLength(3)]],
     initialSalary: [0, [Validators.required, Validators.min(0.01)]],
-    effectiveDate: [{ value: this.today, disabled: true }, Validators.required]
+    effectiveDate: [this.today, [Validators.required, this.notPastDateValidator]]
   });
 
   ngOnInit(): void {
@@ -133,7 +138,8 @@ export class CreateEmployeeComponent implements OnInit {
       roleTitle: raw.roleTitle,
       country: raw.country,
       currency: raw.currency,
-      initialSalary: raw.initialSalary
+      initialSalary: raw.initialSalary,
+      effectiveDate: raw.effectiveDate
     }).subscribe({
       next: emp => this.router.navigate(['/employees', emp.id]),
       error: () => {

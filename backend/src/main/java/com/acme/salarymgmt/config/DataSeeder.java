@@ -77,6 +77,7 @@ public class DataSeeder implements CommandLineRunner {
                     country,
                     currency,
                     salary,
+                    effectiveDate,
                     effectiveDate
             );
             batch.add(employee);

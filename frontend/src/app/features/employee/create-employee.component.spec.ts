@@ -57,11 +57,30 @@ describe('CreateEmployeeComponent', () => {
     expect(fixture.nativeElement.textContent).not.toContain('Employee ID');
   });
 
-  it('should lock effective date to today and disable the control (positive)', () => {
+  it('should default effective date to today and keep it editable (positive)', () => {
     const dateInput: HTMLInputElement = fixture.nativeElement.querySelector('input[formControlName="effectiveDate"]');
     expect(dateInput).toBeTruthy();
-    expect(dateInput.disabled).toBeTrue();
+    expect(dateInput.disabled).toBeFalse();
     expect(dateInput.value).toBe(fixture.componentInstance.today);
+    expect(dateInput.getAttribute('min')).toBe(fixture.componentInstance.today);
+  });
+
+  it('should reject past effective dates in the form (negative)', () => {
+    const component = fixture.componentInstance;
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    component.form.controls.effectiveDate.setValue(yesterday.toISOString().slice(0, 10));
+    expect(component.form.controls.effectiveDate.invalid).toBeTrue();
+    expect(component.form.controls.effectiveDate.errors).toEqual(jasmine.objectContaining({ pastDate: true }));
+  });
+
+  it('should accept a future effective date (positive)', () => {
+    const component = fixture.componentInstance;
+    const future = new Date();
+    future.setDate(future.getDate() + 5);
+    const futureIso = future.toISOString().slice(0, 10);
+    component.form.controls.effectiveDate.setValue(futureIso);
+    expect(component.form.controls.effectiveDate.valid).toBeTrue();
   });
 
   it('should render select dropdowns for department, role, country, and currency (positive)', () => {
@@ -85,7 +104,7 @@ describe('CreateEmployeeComponent', () => {
     expect(component.form.controls.currency.value).toBe('INR');
   });
 
-  it('should submit without employeeIdentifier or client-chosen EMP ID (positive)', () => {
+  it('should submit without employeeIdentifier and include effectiveDate (positive)', () => {
     const component = fixture.componentInstance;
     component.form.patchValue({
       fullName: 'Dana Lee',
@@ -93,7 +112,8 @@ describe('CreateEmployeeComponent', () => {
       department: 'Product',
       roleTitle: 'Staff Level 2',
       country: 'Singapore',
-      initialSalary: 98000
+      initialSalary: 98000,
+      effectiveDate: component.today
     });
     component.onCountryChange('Singapore');
     component.onSubmit();
@@ -103,8 +123,8 @@ describe('CreateEmployeeComponent', () => {
     expect(payload.fullName).toBe('Dana Lee');
     expect(payload.department).toBe('Product');
     expect(payload.currency).toBe('SGD');
+    expect(payload.effectiveDate).toBe(component.today);
     expect((payload as { employeeIdentifier?: string }).employeeIdentifier).toBeUndefined();
-    expect((payload as { effectiveDate?: string }).effectiveDate).toBeUndefined();
   });
 
   it('should keep Create disabled when required fields are missing (negative)', () => {

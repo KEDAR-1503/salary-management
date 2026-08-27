@@ -66,16 +66,29 @@ describe('EmployeeDetailComponent', () => {
     expect(fixture.nativeElement.textContent).toContain('New Salary (in SGD)');
   });
 
-  it('should lock effective date to today and disable editing (positive)', () => {
+  it('should default effective date to today and keep it editable (positive)', () => {
     const dateInput: HTMLInputElement = fixture.nativeElement.querySelector('input[formControlName="effectiveDate"]');
-    expect(dateInput.disabled).toBeTrue();
+    expect(dateInput.disabled).toBeFalse();
     expect(dateInput.value).toBe(fixture.componentInstance.today);
+    expect(dateInput.getAttribute('min')).toBe(fixture.componentInstance.today);
   });
 
-  it('should submit salary update using today as effective date (positive)', () => {
+  it('should reject past effective dates in the salary form (negative)', () => {
     const component = fixture.componentInstance;
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    component.salaryForm.controls.effectiveDate.setValue(yesterday.toISOString().slice(0, 10));
+    expect(component.salaryForm.controls.effectiveDate.invalid).toBeTrue();
+  });
+
+  it('should submit salary update with chosen effective date (positive)', () => {
+    const component = fixture.componentInstance;
+    const future = new Date();
+    future.setDate(future.getDate() + 3);
+    const futureIso = future.toISOString().slice(0, 10);
     component.salaryForm.patchValue({
       newSalary: 170000,
+      effectiveDate: futureIso,
       reason: 'Annual merit performance promotion'
     });
     component.onSalarySubmit();
@@ -83,7 +96,7 @@ describe('EmployeeDetailComponent', () => {
     expect(employeeService.updateSalary).toHaveBeenCalledWith(2, jasmine.objectContaining({
       version: 0,
       newSalary: 170000,
-      effectiveDate: component.today,
+      effectiveDate: futureIso,
       reason: 'Annual merit performance promotion'
     }));
   });

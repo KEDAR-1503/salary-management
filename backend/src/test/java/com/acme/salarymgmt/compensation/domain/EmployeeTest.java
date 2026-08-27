@@ -27,6 +27,7 @@ class EmployeeTest {
                 "United States",
                 USD,
                 new BigDecimal("120000.00"),
+                TODAY,
                 TODAY
         );
 
@@ -46,7 +47,8 @@ class EmployeeTest {
                 "United States",
                 USD,
                 new BigDecimal("120000.00"),
-                TODAY.minusDays(30)
+                TODAY,
+                TODAY
         );
 
         BigDecimal previousSalary = employee.updateSalary(new BigDecimal("135000.555"), TODAY, TODAY);
@@ -57,8 +59,8 @@ class EmployeeTest {
     }
 
     @Test
-    @DisplayName("Should reject salary update when effective date is not today")
-    void shouldRejectNonTodayEffectiveDate() {
+    @DisplayName("Should reject salary update when effective date is in the past")
+    void shouldRejectPastEffectiveDate() {
         Employee employee = Employee.create(
                 "EMP-1001",
                 "Jane Doe",
@@ -68,6 +70,7 @@ class EmployeeTest {
                 "United States",
                 USD,
                 new BigDecimal("120000.00"),
+                TODAY,
                 TODAY
         );
 
@@ -77,7 +80,49 @@ class EmployeeTest {
                 TODAY
         ))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Effective date must be today's date");
+                .hasMessageContaining("past");
+    }
+
+    @Test
+    @DisplayName("Should accept salary update when effective date is in the future")
+    void shouldAcceptFutureEffectiveDate() {
+        Employee employee = Employee.create(
+                "EMP-1001",
+                "Jane Doe",
+                "jane.doe@acme.corp",
+                "Engineering",
+                "Staff Level 3",
+                "United States",
+                USD,
+                new BigDecimal("120000.00"),
+                TODAY,
+                TODAY
+        );
+
+        LocalDate future = TODAY.plusDays(14);
+        employee.updateSalary(new BigDecimal("140000.00"), future, TODAY);
+
+        assertThat(employee.getEffectiveDate()).isEqualTo(future);
+        assertThat(employee.getCurrentSalary()).isEqualByComparingTo(new BigDecimal("140000.00"));
+    }
+
+    @Test
+    @DisplayName("Should reject create when effective date is in the past")
+    void shouldRejectPastEffectiveDateOnCreate() {
+        assertThatThrownBy(() -> Employee.create(
+                "EMP-1001",
+                "Jane Doe",
+                "jane.doe@acme.corp",
+                "Engineering",
+                "Staff Level 1",
+                "United States",
+                USD,
+                new BigDecimal("120000.00"),
+                TODAY.minusDays(1),
+                TODAY
+        ))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("past");
     }
 
     @Test
@@ -92,6 +137,7 @@ class EmployeeTest {
                 "United States",
                 USD,
                 new BigDecimal("120000.00"),
+                TODAY,
                 TODAY
         );
 
@@ -112,6 +158,7 @@ class EmployeeTest {
                 "United States",
                 USD,
                 new BigDecimal("120000.00"),
+                TODAY,
                 TODAY
         ))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -130,6 +177,7 @@ class EmployeeTest {
                 "Atlantis",
                 USD,
                 new BigDecimal("120000.00"),
+                TODAY,
                 TODAY
         ))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -148,6 +196,7 @@ class EmployeeTest {
                 "United States",
                 USD,
                 new BigDecimal("120000.00"),
+                TODAY,
                 TODAY
         ))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -166,6 +215,7 @@ class EmployeeTest {
                 "United States",
                 Currency.getInstance("INR"),
                 new BigDecimal("120000.00"),
+                TODAY,
                 TODAY
         ))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -184,6 +234,7 @@ class EmployeeTest {
                 "United States",
                 USD,
                 new BigDecimal("120000.00"),
+                TODAY,
                 TODAY
         );
 

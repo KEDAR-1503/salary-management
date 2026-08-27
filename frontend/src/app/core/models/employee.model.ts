@@ -60,4 +60,5 @@ export interface CreateEmployeeRequest {
   country: string;
   currency: string;
   initialSalary: number;
+  effectiveDate: string;
 }

@@ -42,6 +42,7 @@ export class EmployeeService {
     country: string;
     currency: string;
     initialSalary: number;
+    effectiveDate: string;
   }): Observable<Employee> {
     return this.http.post<Employee>(this.baseUrl, request);
   }

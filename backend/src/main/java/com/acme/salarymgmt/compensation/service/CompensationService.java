@@ -37,7 +37,8 @@ public class CompensationService {
             String roleTitle,
             String country,
             Currency currency,
-            BigDecimal initialSalary
+            BigDecimal initialSalary,
+            LocalDate effectiveDate
     ) {
         LocalDate today = LocalDate.now(clock);
         String employeeIdentifier = nextEmployeeIdentifier();
@@ -51,6 +52,7 @@ public class CompensationService {
                 country,
                 currency,
                 initialSalary,
+                effectiveDate,
                 today
         );
 
@@ -74,7 +76,7 @@ public class CompensationService {
             Long employeeId,
             Long expectedVersion,
             BigDecimal newSalary,
-            LocalDate ignoredEffectiveDate,
+            LocalDate effectiveDate,
             String reason
     ) {
         if (reason == null || reason.trim().length() < 10) {
@@ -91,7 +93,7 @@ public class CompensationService {
         }
 
         LocalDate today = LocalDate.now(clock);
-        BigDecimal previousSalary = employee.updateSalary(newSalary, today, today);
+        BigDecimal previousSalary = employee.updateSalary(newSalary, effectiveDate, today);
         Employee saved = employeeRepository.save(employee);
 
         String actor = resolveAuthenticatedActor();

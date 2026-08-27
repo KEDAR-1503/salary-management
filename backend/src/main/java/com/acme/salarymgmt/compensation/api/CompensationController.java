@@ -45,7 +45,8 @@ public class CompensationController {
                 request.roleTitle(),
                 request.country(),
                 Currency.getInstance(request.currency()),
-                request.initialSalary()
+                request.initialSalary(),
+                request.effectiveDate()
         );
         return ResponseEntity.status(HttpStatus.CREATED).body(EmployeeResponse.fromDomain(employee));
     }

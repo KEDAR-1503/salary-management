@@ -29,15 +29,18 @@ class AnalyticsRepositoryTest extends AbstractIntegrationTest {
 
         employeeRepository.save(Employee.create(
                 "EMP-A1", "Alice", "alice@acme.corp", "Engineering", "Staff Level 1", "United States",
-                Currency.getInstance("USD"), new BigDecimal("100000.00"), LocalDate.now()
+                Currency.getInstance("USD"), new BigDecimal("100000.00"), LocalDate.now(),
+                LocalDate.now()
         ));
         employeeRepository.save(Employee.create(
                 "EMP-A2", "Bob", "bob@acme.corp", "Engineering", "Staff Level 1", "United States",
-                Currency.getInstance("USD"), new BigDecimal("120000.00"), LocalDate.now()
+                Currency.getInstance("USD"), new BigDecimal("120000.00"), LocalDate.now(),
+                LocalDate.now()
         ));
         employeeRepository.save(Employee.create(
                 "EMP-A3", "Carol", "carol@acme.corp", "Engineering", "Staff Level 1", "United Kingdom",
-                Currency.getInstance("GBP"), new BigDecimal("80000.00"), LocalDate.now()
+                Currency.getInstance("GBP"), new BigDecimal("80000.00"), LocalDate.now(),
+                LocalDate.now()
         ));
     }
 

@@ -74,6 +74,7 @@ class CompensationControllerTest {
                 "United States",
                 USD,
                 new BigDecimal("135000.00"),
+                LocalDate.now(),
                 LocalDate.now()
         );
 
@@ -122,6 +123,7 @@ class CompensationControllerTest {
                 "United States",
                 USD,
                 new BigDecimal("120000.00"),
+                LocalDate.now(),
                 LocalDate.now()
         );
 
@@ -145,6 +147,7 @@ class CompensationControllerTest {
                 "United States",
                 USD,
                 new BigDecimal("120000.00"),
+                LocalDate.now(),
                 LocalDate.now()
         );
 
@@ -177,6 +180,7 @@ class CompensationControllerTest {
                 "United States",
                 USD,
                 new BigDecimal("120000.00"),
+                LocalDate.now(),
                 LocalDate.now()
         );
 
@@ -201,7 +205,8 @@ class CompensationControllerTest {
                 "Staff Level 2",
                 "Singapore",
                 "SGD",
-                new BigDecimal("98000.00")
+                new BigDecimal("98000.00"),
+                LocalDate.now()
         );
 
         Employee created = Employee.create(
@@ -213,6 +218,7 @@ class CompensationControllerTest {
                 request.country(),
                 Currency.getInstance("SGD"),
                 request.initialSalary(),
+                request.effectiveDate(),
                 LocalDate.now()
         );
         org.springframework.test.util.ReflectionTestUtils.setField(created, "id", 42L);
@@ -224,6 +230,7 @@ class CompensationControllerTest {
                 eq("Staff Level 2"),
                 eq("Singapore"),
                 eq(Currency.getInstance("SGD")),
+                any(),
                 any()
         )).thenReturn(created);
 
@@ -249,7 +256,8 @@ class CompensationControllerTest {
                   "roleTitle": "Staff Level 2",
                   "country": "Singapore",
                   "currency": "SGD",
-                  "initialSalary": 98000.00
+                  "initialSalary": 98000.00,
+                  "effectiveDate": "2026-08-27"
                 }
                 """;
 

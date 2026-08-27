@@ -77,7 +77,8 @@ class CompensationServiceTest {
                 "United States",
                 USD,
                 new BigDecimal("120000.00"),
-                effectiveDate.minusMonths(6)
+                effectiveDate,
+                LocalDate.now(FIXED_CLOCK)
         );
 
         when(employeeRepository.findById(101L)).thenReturn(Optional.of(existingEmployee));
@@ -116,7 +117,8 @@ class CompensationServiceTest {
                 "United States",
                 USD,
                 new BigDecimal("120000.00"),
-                effectiveDate
+                effectiveDate,
+                LocalDate.now(FIXED_CLOCK)
         );
 
         when(employeeRepository.findById(101L)).thenReturn(Optional.of(existingEmployee));
@@ -177,7 +179,8 @@ class CompensationServiceTest {
                 "Staff Level 2",
                 "Singapore",
                 Currency.getInstance("SGD"),
-                new BigDecimal("98000.00")
+                new BigDecimal("98000.00"),
+                LocalDate.now(FIXED_CLOCK)
         );
 
         assertThat(created.getId()).isEqualTo(42L);
@@ -205,15 +208,48 @@ class CompensationServiceTest {
                 "Staff Level 1",
                 "United States",
                 USD,
-                new BigDecimal("90000.00")
+                new BigDecimal("90000.00"),
+                LocalDate.now(FIXED_CLOCK)
         );
 
         assertThat(created.getEmployeeIdentifier()).isEqualTo("EMP-00001");
     }
 
     @Test
-    @DisplayName("Should force salary update effective date to today even when client sends another date")
-    void shouldForceUpdateEffectiveDateToToday() {
+    @DisplayName("Should accept future effective date on salary update")
+    void shouldAcceptFutureEffectiveDateOnUpdate() {
+        LocalDate today = LocalDate.now(FIXED_CLOCK);
+        LocalDate future = today.plusDays(7);
+        Employee existingEmployee = Employee.create(
+                "EMP-1001",
+                "Alice Smith",
+                "alice.smith@acme.corp",
+                "Engineering",
+                "Staff Level 3",
+                "United States",
+                USD,
+                new BigDecimal("120000.00"),
+                today,
+                today
+        );
+        when(employeeRepository.findById(101L)).thenReturn(Optional.of(existingEmployee));
+        when(employeeRepository.save(existingEmployee)).thenReturn(existingEmployee);
+
+        Employee updated = compensationService.updateSalary(
+                101L,
+                0L,
+                new BigDecimal("135000.00"),
+                future,
+                "Annual merit performance promotion"
+        );
+
+        assertThat(updated.getEffectiveDate()).isEqualTo(future);
+        assertThat(updated.getCurrentSalary()).isEqualByComparingTo(new BigDecimal("135000.00"));
+    }
+
+    @Test
+    @DisplayName("Should reject past effective date on salary update")
+    void shouldRejectPastEffectiveDateOnUpdate() {
         LocalDate today = LocalDate.now(FIXED_CLOCK);
         Employee existingEmployee = Employee.create(
                 "EMP-1001",
@@ -224,21 +260,20 @@ class CompensationServiceTest {
                 "United States",
                 USD,
                 new BigDecimal("120000.00"),
-                today.minusDays(10)
+                today,
+                today
         );
         when(employeeRepository.findById(101L)).thenReturn(Optional.of(existingEmployee));
-        when(employeeRepository.save(existingEmployee)).thenReturn(existingEmployee);
 
-        Employee updated = compensationService.updateSalary(
+        assertThatThrownBy(() -> compensationService.updateSalary(
                 101L,
                 0L,
                 new BigDecimal("135000.00"),
-                today.minusDays(3),
+                today.minusDays(1),
                 "Annual merit performance promotion"
-        );
-
-        assertThat(updated.getEffectiveDate()).isEqualTo(today);
-        assertThat(updated.getCurrentSalary()).isEqualByComparingTo(new BigDecimal("135000.00"));
+        ))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("past");
     }
 
     @Test
@@ -251,7 +286,8 @@ class CompensationServiceTest {
                 "Staff Level 1",
                 "United States",
                 USD,
-                new BigDecimal("90000.00")
+                new BigDecimal("90000.00"),
+                LocalDate.now(FIXED_CLOCK)
         ))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Department");
@@ -269,6 +305,7 @@ class CompensationServiceTest {
                 "United States",
                 USD,
                 new BigDecimal("120000.00"),
+                LocalDate.now(FIXED_CLOCK),
                 LocalDate.now(FIXED_CLOCK)
         );
         PageRequest pageable = PageRequest.of(0, 20);

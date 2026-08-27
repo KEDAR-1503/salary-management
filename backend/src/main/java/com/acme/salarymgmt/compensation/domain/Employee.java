@@ -70,9 +70,11 @@ public class Employee {
             String country,
             Currency currency,
             BigDecimal initialSalary,
-            LocalDate effectiveDate
+            LocalDate effectiveDate,
+            LocalDate today
     ) {
         validateFields(employeeIdentifier, fullName, email, department, roleTitle, country, currency, effectiveDate);
+        ensureEffectiveDateNotPast(effectiveDate, today);
         if (initialSalary == null || initialSalary.compareTo(BigDecimal.ZERO) <= 0) {
             throw new IllegalArgumentException("Initial salary must be strictly positive");
         }
@@ -97,12 +99,7 @@ public class Employee {
         if (newSalary == null || newSalary.compareTo(BigDecimal.ZERO) <= 0) {
             throw new IllegalArgumentException("New salary must be strictly positive");
         }
-        if (effectiveDate == null) {
-            throw new IllegalArgumentException("Effective date must not be null");
-        }
-        if (!effectiveDate.equals(today)) {
-            throw new IllegalArgumentException("Effective date must be today's date");
-        }
+        ensureEffectiveDateNotPast(effectiveDate, today);
         BigDecimal previous = this.currentSalary;
         this.currentSalary = newSalary.setScale(2, RoundingMode.HALF_EVEN);
         this.effectiveDate = effectiveDate;
@@ -111,6 +108,18 @@ public class Employee {
 
     public Currency getCurrency() {
         return Currency.getInstance(this.currencyCode);
+    }
+
+    static void ensureEffectiveDateNotPast(LocalDate effectiveDate, LocalDate today) {
+        if (effectiveDate == null) {
+            throw new IllegalArgumentException("Effective date must not be null");
+        }
+        if (today == null) {
+            throw new IllegalArgumentException("Today's date must not be null");
+        }
+        if (effectiveDate.isBefore(today)) {
+            throw new IllegalArgumentException("Effective date must not be in the past");
+        }
     }
 
     private static void validateFields(

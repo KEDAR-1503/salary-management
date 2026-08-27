@@ -30,7 +30,7 @@ import { Employee, SalaryAuditLog } from '../../core/models/employee.model';
             <input type="number" formControlName="newSalary" />
           </label>
           <label>Effective Date
-            <input type="date" formControlName="effectiveDate" />
+            <input type="date" formControlName="effectiveDate" [attr.min]="today" />
           </label>
           <label>Reason (min 10 chars)<textarea formControlName="reason" rows="3"></textarea></label>
           @if (conflict()) { <p class="conflict" role="alert">{{ conflict() }} <button type="button" (click)="reload()">Reload</button></p> }
@@ -63,7 +63,6 @@ import { Employee, SalaryAuditLog } from '../../core/models/employee.model';
     form { max-width: 480px; display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 2rem; }
     label { display: flex; flex-direction: column; }
     input, textarea { padding: 0.5rem; margin-top: 0.25rem; }
-    input:disabled { background: #f5f5f5; color: #555; }
     table { width: 100%; border-collapse: collapse; }
     th, td { border-bottom: 1px solid #eee; padding: 0.5rem; text-align: left; }
     .conflict { background: #fff3e0; padding: 0.75rem; border-radius: 4px; color: #e65100; }
@@ -84,9 +83,14 @@ export class EmployeeDetailComponent implements OnInit {
   readonly salaryError = signal<string | null>(null);
   readonly today = new Date().toISOString().slice(0, 10);
 
+  private readonly notPastDateValidator = (control: { value: string }) => {
+    if (!control.value) return null;
+    return control.value < this.today ? { pastDate: true } : null;
+  };
+
   readonly salaryForm = this.fb.nonNullable.group({
     newSalary: [0, [Validators.required, Validators.min(0.01)]],
-    effectiveDate: [{ value: this.today, disabled: true }, Validators.required],
+    effectiveDate: [this.today, [Validators.required, this.notPastDateValidator]],
     reason: ['', [Validators.required, Validators.minLength(10)]]
   });
 
@@ -122,11 +126,11 @@ export class EmployeeDetailComponent implements OnInit {
     this.saving.set(true);
     this.conflict.set(null);
     this.salaryError.set(null);
-    const { newSalary, reason } = this.salaryForm.getRawValue();
+    const { newSalary, effectiveDate, reason } = this.salaryForm.getRawValue();
     this.employeeService.updateSalary(this.employeeId, {
       version: emp.version,
       newSalary,
-      effectiveDate: this.today,
+      effectiveDate,
       reason
     }).subscribe({
       next: updated => {
