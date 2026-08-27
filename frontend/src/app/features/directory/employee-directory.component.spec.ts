@@ -117,6 +117,44 @@ describe('EmployeeDirectoryComponent', () => {
     });
   });
 
+  it('should pass an exact email search term to the employee service (positive)', () => {
+    const component = fixture.componentInstance;
+    component.search = 'worker.00001@acme.corp';
+    component.applyFilters();
+
+    expect(employeeService.getEmployees).toHaveBeenCalledWith(jasmine.objectContaining({
+      search: 'worker.00001@acme.corp',
+      page: 0
+    }));
+  });
+
+  it('should pass an exact full-name search term to the employee service (positive)', () => {
+    const component = fixture.componentInstance;
+    component.search = 'Worker 1';
+    component.applyFilters();
+
+    expect(employeeService.getEmployees).toHaveBeenCalledWith(jasmine.objectContaining({
+      search: 'Worker 1'
+    }));
+  });
+
+  it('should omit blank search from the request (negative)', () => {
+    const component = fixture.componentInstance;
+    component.search = '   ';
+    component.applyFilters();
+
+    expect(employeeService.getEmployees).toHaveBeenCalledWith(jasmine.objectContaining({
+      search: undefined
+    }));
+  });
+
+  it('should advertise exact search by name, email, or employee ID', () => {
+    const input: HTMLInputElement = fixture.nativeElement.querySelector('.filters input');
+    expect(input.placeholder.toLowerCase()).toContain('name');
+    expect(input.placeholder.toLowerCase()).toContain('email');
+    expect(input.placeholder.toLowerCase()).toMatch(/id|employee/);
+  });
+
   it('should keep page at 0 when Previous is clicked on the first page', () => {
     const component = fixture.componentInstance;
     employeeService.getEmployees.calls.reset();

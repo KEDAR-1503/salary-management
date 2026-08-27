@@ -17,7 +17,7 @@ import { Employee } from '../../core/models/employee.model';
         <a routerLink="/employees/new" class="btn">Create Employee</a>
       </header>
       <div class="filters">
-        <input [(ngModel)]="search" placeholder="Search by name or ID" (keyup.enter)="applyFilters()" />
+        <input [(ngModel)]="search" placeholder="Search by name, email, or employee ID" (keyup.enter)="applyFilters()" />
         <select [(ngModel)]="department" (ngModelChange)="applyFilters()" aria-label="Department">
           <option value="">All departments</option>
           @for (dept of departments(); track dept) {
@@ -121,7 +121,7 @@ export class EmployeeDirectoryComponent implements OnInit {
     this.employeeService.getEmployees({
       page: this.page(),
       size: 20,
-      search: this.search || undefined,
+      search: this.search.trim() || undefined,
       department: this.department || undefined,
       country: this.country || undefined
     }).subscribe({
