@@ -2,6 +2,7 @@ package com.acme.salarymgmt.compensation.repository;
 
 import com.acme.salarymgmt.AbstractIntegrationTest;
 import com.acme.salarymgmt.compensation.domain.Employee;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,6 +24,11 @@ class EmployeeRepositoryTest extends AbstractIntegrationTest {
 
     @Autowired
     private EmployeeRepository employeeRepository;
+
+    @BeforeEach
+    void clearEmployees() {
+        employeeRepository.deleteAll();
+    }
 
     @Test
     @DisplayName("Should persist and retrieve Employee entity with correct version")
