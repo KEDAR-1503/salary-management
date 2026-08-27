@@ -208,6 +208,26 @@ class CompensationControllerTest {
 
     @Test
     @WithMockUser(username = "hr_manager", roles = {"HR_MANAGER"})
+    @DisplayName("GET /api/v1/employees/{id} - should return 404 when employee missing (negative)")
+    void shouldReturn404WhenEmployeeMissing() throws Exception {
+        when(compensationService.getEmployee(99L))
+                .thenThrow(new EntityNotFoundException("Employee not found with id: 99"));
+
+        mockMvc.perform(get("/api/v1/employees/99"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.title").value("Not Found"))
+                .andExpect(jsonPath("$.detail").value("Employee not found with id: 99"));
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/employees/{id} - should reject unauthenticated access (negative)")
+    void shouldRejectUnauthenticatedEmployeeDetail() throws Exception {
+        mockMvc.perform(get("/api/v1/employees/1"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockUser(username = "hr_manager", roles = {"HR_MANAGER"})
     @DisplayName("GET /api/v1/employees/{id}/history - should return audit history newest first")
     void shouldReturnEmployeeHistory() throws Exception {
         Employee employee = Employee.create(
@@ -237,6 +257,25 @@ class CompensationControllerTest {
         mockMvc.perform(get("/api/v1/employees/1/history"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].reason").value("Initial Employee Setup"));
+    }
+
+    @Test
+    @WithMockUser(username = "hr_manager", roles = {"HR_MANAGER"})
+    @DisplayName("GET /api/v1/employees/{id}/history - should return 404 when employee missing (negative)")
+    void shouldReturn404WhenHistoryEmployeeMissing() throws Exception {
+        when(compensationService.getEmployee(99L))
+                .thenThrow(new EntityNotFoundException("Employee not found with id: 99"));
+
+        mockMvc.perform(get("/api/v1/employees/99/history"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.title").value("Not Found"));
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/employees/{id}/history - should reject unauthenticated access (negative)")
+    void shouldRejectUnauthenticatedEmployeeHistory() throws Exception {
+        mockMvc.perform(get("/api/v1/employees/1/history"))
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
