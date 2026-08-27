@@ -65,10 +65,11 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long>, JpaSp
                 ));
             }
             if (searchTerm != null && !searchTerm.isBlank()) {
-                String pattern = "%" + searchTerm.toLowerCase(Locale.ROOT) + "%";
+                String normalized = searchTerm.trim().toLowerCase(Locale.ROOT);
                 predicates.add(cb.or(
-                        cb.like(cb.lower(root.get("fullName")), pattern),
-                        cb.like(cb.lower(root.get("employeeIdentifier")), pattern)
+                        cb.equal(cb.lower(root.get("fullName")), normalized),
+                        cb.equal(cb.lower(root.get("employeeIdentifier")), normalized),
+                        cb.equal(cb.lower(root.get("email")), normalized)
                 ));
             }
 
