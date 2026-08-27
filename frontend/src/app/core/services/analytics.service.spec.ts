@@ -71,4 +71,30 @@ describe('AnalyticsService (TDD)', () => {
     expect(req.request.method).toBe('GET');
     req.flush(mockData);
   });
+
+  it('should surface department analytics HTTP failures (negative)', (done) => {
+    service.getDepartmentSummaries().subscribe({
+      next: () => done.fail('expected error'),
+      error: err => {
+        expect(err.status).toBe(500);
+        done();
+      }
+    });
+
+    const req = httpMock.expectOne('/api/v1/analytics/departments');
+    req.flush({ detail: 'failure' }, { status: 500, statusText: 'Server Error' });
+  });
+
+  it('should surface country analytics HTTP failures (negative)', (done) => {
+    service.getCountrySummaries().subscribe({
+      next: () => done.fail('expected error'),
+      error: err => {
+        expect(err.status).toBe(503);
+        done();
+      }
+    });
+
+    const req = httpMock.expectOne('/api/v1/analytics/countries');
+    req.flush({ detail: 'unavailable' }, { status: 503, statusText: 'Service Unavailable' });
+  });
 });
