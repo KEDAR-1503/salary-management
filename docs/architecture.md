@@ -75,8 +75,6 @@ Start with domain value objects, then salary change/audit, persistence/concurren
 
 ## Delivery evidence
 
-Before submission, the repository must add a short AI-use log, a local/Codespaces setup guide, deployment instructions, a health-check endpoint, seed-profile instructions, captured query-plan evidence, and the demo-video link. The deployed **demo** environment enables the explicit deterministic demo-seed profile; a production configuration leaves it disabled. GitHub Actions supplies demo credentials through repository secrets, starts PostgreSQL as an integration-test service container, runs migrations and automated checks, then builds the deployable image.
-
 The health-check endpoint must be verified to actually touch the database (see Deployment target), and the `MaxRAMPercentage=75` setting must be verified against observed container memory before the demo video is recorded.
 
 ## Why this aligns with Incubyte

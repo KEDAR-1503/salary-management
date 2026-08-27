@@ -45,10 +45,3 @@ Commit message format: `<type>(<module>): <what changed>`
 | 18 | `docs` | Demo video link (after deployment) | [ ] |
 
 ---
-
-## Rules
-
-- Do not replay Phase 1–10 micro-commits from the original plan.
-- Fix median and optimistic-lock contract before building UI on the wrong API.
-- Prefer Testcontainers PostgreSQL over H2 for analytics and index evidence.
-- Seed before capturing `EXPLAIN ANALYZE` evidence.
