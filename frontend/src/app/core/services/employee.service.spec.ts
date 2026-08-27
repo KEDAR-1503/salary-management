@@ -39,12 +39,14 @@ describe('EmployeeService', () => {
   it('should fetch filter options for department and country dropdowns', () => {
     const mockOptions: EmployeeFilterOptions = {
       departments: ['Engineering', 'Finance'],
-      countries: ['India', 'United States']
+      countries: ['India', 'United States'],
+      roleTitles: ['Staff Level 1', 'Staff Level 2']
     };
 
     service.getFilterOptions().subscribe(options => {
       expect(options.departments).toEqual(['Engineering', 'Finance']);
       expect(options.countries).toEqual(['India', 'United States']);
+      expect(options.roleTitles).toEqual(['Staff Level 1', 'Staff Level 2']);
     });
 
     const req = httpMock.expectOne('/api/v1/employees/filter-options');

@@ -31,6 +31,7 @@ export interface EmployeeFilterParams {
 export interface EmployeeFilterOptions {
   departments: string[];
   countries: string[];
+  roleTitles: string[];
 }
 
 export interface UpdateSalaryRequest {

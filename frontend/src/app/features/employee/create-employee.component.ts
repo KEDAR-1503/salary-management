@@ -1,8 +1,16 @@
-import { Component, ChangeDetectionStrategy, inject, signal } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { EmployeeService } from '../../core/services/employee.service';
+
+const CURRENCY_BY_COUNTRY: Record<string, string> = {
+  'United States': 'USD',
+  'United Kingdom': 'GBP',
+  Germany: 'EUR',
+  India: 'INR',
+  Singapore: 'SGD'
+};
 
 @Component({
   selector: 'app-create-employee',
@@ -16,10 +24,37 @@ import { EmployeeService } from '../../core/services/employee.service';
         <label>Employee ID<input formControlName="employeeIdentifier" /></label>
         <label>Full Name<input formControlName="fullName" /></label>
         <label>Email<input type="email" formControlName="email" /></label>
-        <label>Department<input formControlName="department" /></label>
-        <label>Role Title<input formControlName="roleTitle" /></label>
-        <label>Country<input formControlName="country" /></label>
-        <label>Currency<input formControlName="currency" maxlength="3" /></label>
+        <label>Department
+          <select formControlName="department">
+            <option value="" disabled>Select department</option>
+            @for (dept of departments(); track dept) {
+              <option [value]="dept">{{ dept }}</option>
+            }
+          </select>
+        </label>
+        <label>Role Title
+          <select formControlName="roleTitle">
+            <option value="" disabled>Select role</option>
+            @for (role of roleTitles(); track role) {
+              <option [value]="role">{{ role }}</option>
+            }
+          </select>
+        </label>
+        <label>Country
+          <select formControlName="country" (change)="onCountryChange(form.controls.country.value)">
+            <option value="" disabled>Select country</option>
+            @for (country of countries(); track country) {
+              <option [value]="country">{{ country }}</option>
+            }
+          </select>
+        </label>
+        <label>Currency
+          <select formControlName="currency">
+            @for (code of currencies; track code) {
+              <option [value]="code">{{ code }}</option>
+            }
+          </select>
+        </label>
         <label>Initial Salary<input type="number" formControlName="initialSalary" /></label>
         <label>Effective Date<input type="date" formControlName="effectiveDate" /></label>
         @if (error()) { <p class="error">{{ error() }}</p> }
@@ -33,19 +68,24 @@ import { EmployeeService } from '../../core/services/employee.service';
   styles: [`
     form { max-width: 480px; display: flex; flex-direction: column; gap: 0.75rem; }
     label { display: flex; flex-direction: column; }
-    input { padding: 0.5rem; margin-top: 0.25rem; }
+    input, select { padding: 0.5rem; margin-top: 0.25rem; }
     .actions { display: flex; gap: 1rem; align-items: center; margin-top: 1rem; }
     button { padding: 0.5rem 1rem; background: #1976d2; color: white; border: none; border-radius: 4px; }
+    button:disabled { opacity: 0.6; }
     .error { color: #c62828; }
   `]
 })
-export class CreateEmployeeComponent {
+export class CreateEmployeeComponent implements OnInit {
   private readonly employeeService = inject(EmployeeService);
   private readonly router = inject(Router);
   private readonly fb = inject(FormBuilder);
 
   readonly saving = signal(false);
   readonly error = signal<string | null>(null);
+  readonly departments = signal<string[]>([]);
+  readonly countries = signal<string[]>([]);
+  readonly roleTitles = signal<string[]>([]);
+  readonly currencies = Object.values(CURRENCY_BY_COUNTRY);
 
   readonly form = this.fb.nonNullable.group({
     employeeIdentifier: ['', Validators.required],
@@ -54,10 +94,28 @@ export class CreateEmployeeComponent {
     department: ['', Validators.required],
     roleTitle: ['', Validators.required],
     country: ['', Validators.required],
-    currency: ['USD', [Validators.required, Validators.minLength(3), Validators.maxLength(3)]],
+    currency: [{ value: 'USD', disabled: true }, [Validators.required, Validators.minLength(3), Validators.maxLength(3)]],
     initialSalary: [0, [Validators.required, Validators.min(0.01)]],
     effectiveDate: [new Date().toISOString().slice(0, 10), Validators.required]
   });
+
+  ngOnInit(): void {
+    this.employeeService.getFilterOptions().subscribe({
+      next: options => {
+        this.departments.set(options.departments);
+        this.countries.set(options.countries);
+        this.roleTitles.set(options.roleTitles);
+      },
+      error: () => this.error.set('Failed to load organisation catalog.')
+    });
+  }
+
+  onCountryChange(country: string): void {
+    const currency = CURRENCY_BY_COUNTRY[country];
+    if (currency) {
+      this.form.controls.currency.setValue(currency);
+    }
+  }
 
   onSubmit(): void {
     if (this.form.invalid) return;

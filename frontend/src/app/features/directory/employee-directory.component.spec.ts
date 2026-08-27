@@ -33,7 +33,8 @@ describe('EmployeeDirectoryComponent', () => {
     employeeService = jasmine.createSpyObj('EmployeeService', ['getEmployees', 'getFilterOptions']);
     employeeService.getFilterOptions.and.returnValue(of({
       departments: ['Engineering', 'Finance'],
-      countries: ['India', 'United States']
+      countries: ['India', 'United States'],
+      roleTitles: ['Staff Level 1', 'Staff Level 2']
     }));
     employeeService.getEmployees.and.returnValue(of(pageResponse));
 
@@ -89,5 +90,59 @@ describe('EmployeeDirectoryComponent', () => {
   it('should request next page when Next is clicked', () => {
     fixture.componentInstance.nextPage();
     expect(employeeService.getEmployees).toHaveBeenCalledWith(jasmine.objectContaining({ page: 1 }));
+  });
+
+  it('should not advance past the last page', () => {
+    const component = fixture.componentInstance;
+    component.page.set(2);
+    component.totalPages.set(3);
+    employeeService.getEmployees.calls.reset();
+    component.nextPage();
+    expect(component.page()).toBe(2);
+    expect(employeeService.getEmployees).not.toHaveBeenCalled();
+  });
+
+  it('should pass country and search filters together', () => {
+    const component = fixture.componentInstance;
+    component.country = 'India';
+    component.search = 'EMP-00001';
+    component.applyFilters();
+
+    expect(employeeService.getEmployees).toHaveBeenCalledWith({
+      page: 0,
+      size: 20,
+      search: 'EMP-00001',
+      department: undefined,
+      country: 'India'
+    });
+  });
+
+  it('should keep page at 0 when Previous is clicked on the first page', () => {
+    const component = fixture.componentInstance;
+    employeeService.getEmployees.calls.reset();
+    expect(component.page()).toBe(0);
+    component.prevPage();
+    expect(component.page()).toBe(0);
+    expect(employeeService.getEmployees).not.toHaveBeenCalled();
+  });
+
+  it('should wrap the results table for horizontal scrolling on small screens', () => {
+    const wrap = fixture.nativeElement.querySelector('.table-wrap');
+    expect(wrap).toBeTruthy();
+    expect(wrap.querySelector('table')).toBeTruthy();
+  });
+
+  it('should render an empty table body when the page has no employees', () => {
+    employeeService.getEmployees.and.returnValue(of({
+      ...pageResponse,
+      content: [],
+      totalElements: 0,
+      totalPages: 0
+    }));
+    fixture.componentInstance.load();
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.employees()).toEqual([]);
+    expect(fixture.nativeElement.querySelectorAll('tbody tr').length).toBe(0);
   });
 });
